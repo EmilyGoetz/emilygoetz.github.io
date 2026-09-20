@@ -6,32 +6,306 @@
  * i'm a mobile dev
  */
 
-html, body {
-	height: 100%;
-	background: #d2d2d2;
+:root {
+	--face: #efe3f7;
+	--face-l: #f8f1fc;
+	--face-d: #9a86b5;
+	--ink: #3a2f4a;
+	--pink: #ff8fc8;
+	--lav: #a98cf0;
+	--purple: #7b4fa3;
+	--desktop: #8fdccd;
+	--mat: #d8cbe6;
+	--link: #4b32c9;
+	--link-visited: #b0388f;
+
+	/* the raised and sunken edges shared by every window and control */
+	--bevel-out: inset -1px -1px var(--ink), inset 1px 1px #fff, inset -2px -2px var(--face-d);
+	--bevel-in: inset 1px 1px var(--ink), inset -1px -1px #fff;
+	--bevel-soft: inset 1px 1px var(--face-d), inset -1px -1px #fff;
+	--bevel-win: var(--bevel-out), inset 2px 2px var(--face-l);
+	--bevel-well: var(--bevel-in), inset 2px 2px var(--face-d), inset -2px -2px var(--face-l);
+
+	--icons-w: 118px; /* room kept free on the left for the desktop icons */
+	--stage-w: 960px; /* widest the group of windows gets */
+	--taskbar-h: 34px;
+	/* window z-indexes count up from script.js; these stay above all of them */
+	--z-taskbar: 100000;
+	--z-spark: 100001;
+	--vh: 1vh;
 }
+/* on phones vh includes the area behind the browser's toolbar, dvh doesn't */
+@supports (height: 100dvh) {
+	:root { --vh: 1dvh; }
+}
+
+* { box-sizing: border-box; }
+
+/* Whatever is dragged past the right edge must not widen the page: mobile browsers answer that by zooming out or
+   panning, which carries the fixed taskbar out of view. The body is positioned, so the floating windows are clipped
+   with it, and it clips sideways without becoming a scroll container (hidden first, for browsers without clip). */
+html { overflow-x: clip; }
+
 body {
+	position: relative;
 	margin: 0;
+	min-height: calc(100 * var(--vh));
+	padding: 22px 20px calc(var(--taskbar-h) + 30px) var(--icons-w);
+	overflow-x: hidden;
+	overflow-x: clip;
+	font: 12px/1.45 Tahoma, Verdana, sans-serif;
+	color: var(--ink);
+	background: var(--desktop) radial-gradient(circle, rgba(255, 255, 255, .45) 1px, transparent 1.6px) 0 0 / 14px 14px;
+	/* center the windows vertically (auto margins on .windows, so a tall group just starts at the top instead of getting clipped) */
+	display: flex; flex-direction: column;
+}
+body.is-dragging { user-select: none; -webkit-user-select: none; }
+
+a { color: var(--link); }
+a:visited { color: var(--link-visited); }
+
+/* ---------- desktop icons ---------- */
+.icons { position: absolute; top: 20px; left: 14px; display: grid; gap: 14px; width: 90px; }
+.icon {
+	display: block; width: 100%; padding: 0; border: 0; background: none;
+	font: inherit; font-size: 11px; line-height: 1.2; text-align: center;
+	color: #fff; text-shadow: 1px 1px 0 var(--ink); cursor: default;
+}
+.icon b { display: block; font-size: 32px; font-weight: normal; text-shadow: none; }
+.icon span { padding: 0 3px; }
+button.icon { cursor: pointer; }
+button.icon:focus-visible { outline: 0; }
+button.icon:focus-visible span, button.icon:active span { background: var(--purple); outline: 1px dotted #fff; }
+
+/* ---------- windows ---------- */
+.windows {
+	display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start; max-width: var(--stage-w);
+	/* center the group in the viewport (body's left padding already reserves room for the icons) */
+	margin-left: max(0px, calc((100vw - var(--stage-w)) / 2 - var(--icons-w)));
+	margin-block: auto;
+}
+.col { display: grid; gap: 24px; }
+.col.r { padding-top: 28px; }
+
+.win {
+	position: relative;
+	scroll-margin: 12px 0 calc(var(--taskbar-h) + 12px); /* keep clear of the taskbar when scrolled into view */
+	padding: 3px;
+	background: var(--face);
+	box-shadow: var(--bevel-win), 5px 5px 0 rgba(58, 47, 74, .3);
+}
+.win.dragging { box-shadow: var(--bevel-win), 10px 12px 0 rgba(58, 47, 74, .28); }
+/* hidden windows keep their place in the layout, so nothing shifts when others come and go */
+.win.is-gone { visibility: hidden; pointer-events: none; }
+
+.titlebar {
+	display: flex; align-items: center; gap: 6px;
+	padding: 3px 4px;
+	color: #fff; font-weight: bold;
+	background: linear-gradient(90deg, var(--pink), var(--lav));
+	cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.win.dragging .titlebar { cursor: grabbing; }
+.titlebar .btns { margin-left: auto; display: flex; gap: 2px; }
+.tb {
+	width: 16px; height: 14px; padding: 0; border: 0; text-align: center; font: bold 9px/14px Tahoma, sans-serif; color: var(--ink);
+	background: var(--face);
+	box-shadow: var(--bevel-out);
+}
+button.tb { cursor: pointer; }
+button.tb:active { box-shadow: var(--bevel-in); line-height: 16px; }
+button.tb:focus-visible { outline: 1px dotted var(--ink); outline-offset: -3px; }
+.menubar { display: flex; gap: 14px; padding: 2px 6px; }
+.content {
+	background: #fff; padding: 10px 12px; margin: 0 1px 1px;
+	box-shadow: var(--bevel-well);
+}
+.status { display: flex; justify-content: space-between; gap: 12px; padding: 3px 6px 1px; font-size: 11px; }
+.status span:first-child { white-space: nowrap; }
+
+/* About Me.txt */
+.notepad .content { font: 13px/1.5 "Courier New", Courier, monospace; }
+.notepad p { margin: 0 0 8px; }
+.notepad .sub { padding-left: 18px; }
+.notepad .sub::before { content: "* "; }
+
+.mail .hide { display: none; }
+
+/* photo.jpg */
+.photo .content { padding: 8px; text-align: center; background: var(--mat); }
+.photo img { display: block; width: 100%; max-width: 300px; height: auto; aspect-ratio: 1; object-fit: cover; margin: 0 auto; border: 1px solid var(--ink); pointer-events: none; }
+
+/* Contact.exe */
+.contact .content { background: var(--face); box-shadow: none; }
+.field { display: grid; grid-template-columns: 62px 1fr; gap: 6px; align-items: center; margin-bottom: 6px; }
+.field .val { background: #fff; padding: 2px 6px; box-shadow: var(--bevel-in); overflow-wrap: anywhere; }
+.dlg-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.dlg-btns span {
+	min-width: 70px; padding: 3px 8px; text-align: center; background: var(--face);
+	box-shadow: var(--bevel-out);
 }
 
-#container {
-	height: 100%;
-	padding: 0;
-	margin: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	align-content: center;
-	flex-wrap: wrap;
+/* ---------- window open / close animations ---------- */
+@keyframes to-taskbar {
+	0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+	25%  { transform: translate(0, -10px) scale(1.03); opacity: 1; }
+	100% { transform: translate(var(--mx), var(--my)) scale(.04); opacity: 0; }
+}
+@keyframes from-taskbar {
+	0%   { transform: translate(var(--mx), var(--my)) scale(.04); opacity: 0; }
+	55%  { opacity: 1; }
+	100% { transform: translate(0, 0) scale(1); opacity: 1; }
+}
+@keyframes crt-off {
+	0%   { transform: scale(1, 1); filter: brightness(1); opacity: 1; }
+	55%  { transform: scale(1, .015); filter: brightness(2.6); opacity: 1; }
+	85%  { transform: scale(.03, .015); filter: brightness(3); opacity: 1; }
+	100% { transform: scale(0, 0); filter: brightness(3); opacity: 0; }
+}
+@keyframes bump {
+	35% { transform: scale(1.035); }
+	70% { transform: scale(.99); }
+}
+.win.minimizing { animation: to-taskbar .4s cubic-bezier(.5, 0, .75, 0) forwards; pointer-events: none; }
+.win.closing    { animation: crt-off .36s ease-in forwards; pointer-events: none; }
+.win.restoring  { animation: from-taskbar .45s cubic-bezier(.2, 1.25, .4, 1) both; }
+.win.bump       { animation: bump .28s ease-out; }
+
+/* ---------- taskbar + start menu ---------- */
+.taskbar {
+	position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-taskbar);
+	display: flex; align-items: center; gap: 6px; padding: 4px 6px;
+	background: var(--face); box-shadow: inset 0 2px #fff, 0 -1px var(--face-d);
+}
+details.start { position: relative; }
+details.start summary {
+	list-style: none; cursor: pointer; padding: 3px 12px; font-weight: bold; font-size: 13px;
+	background: var(--face); box-shadow: var(--bevel-out);
+}
+details.start[open] summary { box-shadow: var(--bevel-in); }
+details.start summary::-webkit-details-marker { display: none; }
+details.start ul {
+	position: absolute; bottom: 100%; left: 0; margin: 0 0 4px; padding: 3px; min-width: 190px; list-style: none;
+	background: var(--face);
+	box-shadow: var(--bevel-out), 4px 4px 0 rgba(58, 47, 74, .3);
+}
+details.start li button {
+	display: block; width: 100%; padding: 6px 10px; border: 0; background: none; text-align: left;
+	font: 13px Tahoma, Verdana, sans-serif; color: var(--ink); cursor: pointer;
+}
+details.start li button:hover, details.start li button:focus-visible { background: linear-gradient(90deg, var(--pink), var(--lav)); color: #fff; outline: 0; }
+details.start li.sep { height: 2px; margin: 3px 2px; box-shadow: inset 0 1px var(--face-d), inset 0 -1px #fff; }
+
+/* Programs flyout */
+details.start li.has-sub { position: relative; }
+details.start li.has-sub > button .arr { float: right; }
+details.start ul.sub { display: none; top: -3px; bottom: auto; left: 100%; margin: 0; min-width: 130px; }
+details.start li.has-sub:hover > ul.sub,
+details.start li.has-sub:focus-within > ul.sub,
+details.start li.has-sub.open > ul.sub { display: block; }
+
+/* the button strip can shrink and, as a last resort on very narrow screens, scroll instead of running under the clock */
+.tasks { display: flex; gap: 4px; min-width: 0; padding: 0 3px 3px 0; overflow-x: auto; scrollbar-width: none; }
+.tasks::-webkit-scrollbar { display: none; }
+.task {
+	padding: 3px 10px; border: 0; white-space: nowrap; font: inherit; color: var(--ink); cursor: pointer; background: var(--face);
+	box-shadow: var(--bevel-out);
+}
+.task.on { box-shadow: var(--bevel-in); background: var(--face-l); font-weight: bold; }
+.task:focus-visible { outline: 1px dotted var(--ink); outline-offset: -4px; }
+.task[hidden] { display: none; }
+.tray { flex: none; margin-left: auto; padding: 3px 10px; white-space: nowrap; box-shadow: var(--bevel-soft); }
+details.start { flex: none; }
+
+/* ---------- floating windows ---------- */
+/* Windows that start closed and open over the page, centered in the part of it you're looking at (script.js sets --sy to
+   the scroll position and --vp to the viewport height when one opens); after that they scroll with the page like
+   everything else. --vp is fixed at that moment rather than following the live viewport, so the browser's toolbar
+   sliding in and out while scrolling doesn't nudge them. Each sets its own size inline: --w is its width, --hh is
+   about half its height (for vertical centering) and --dx optionally nudges it sideways on desktop so windows don't
+   open exactly on top of each other. */
+.win.popup {
+	--w: 480px; --hh: 200px; --dx: 0px; --sy: 0px;
+	--vp: calc(100 * var(--vh));
+	--pw: min(var(--w), calc(100vw - 24px));
+	--ot: max(12px, calc(var(--vp) / 2 - var(--hh)));
+	position: absolute; width: var(--pw); top: calc(var(--sy) + var(--ot));
+	left: calc(50vw - var(--pw) / 2 + var(--dx));
+}
+/* a closed one takes no space at all, so it can't stretch the page it's positioned on */
+.win.popup.is-gone { display: none; }
+/* a window that can be taller than the screen scrolls its content instead */
+.win.popup.scroll { max-height: calc(var(--vp) - var(--ot) - var(--taskbar-h) - 22px); }
+.win.popup.scroll:not(.is-gone) { display: flex; flex-direction: column; }
+.win.scroll .content { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* ---------- Paint ---------- */
+.win.paint .content { display: flex; gap: 6px; padding: 6px; background: var(--face); box-shadow: none; }
+.pnt-tools { display: grid; grid-template-columns: repeat(2, 28px); gap: 2px; align-content: start; }
+.pnt-tools .sep { grid-column: 1 / -1; height: 6px; }
+.pt {
+	width: 28px; height: 28px; padding: 0; border: 0; font-size: 15px; line-height: 1; cursor: pointer; background: var(--face); color: var(--ink);
+	box-shadow: var(--bevel-out);
+}
+.pt svg { display: block; margin: 0 auto; }
+.pt.on { background: var(--face-l); box-shadow: var(--bevel-in); }
+.pt:active { box-shadow: var(--bevel-in); }
+.pt:focus-visible, .sw:focus-visible { outline: 1px dotted var(--ink); outline-offset: -4px; }
+.pnt-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.pnt-canvas {
+	padding: 2px; line-height: 0; background: #fff;
+	box-shadow: var(--bevel-well);
+}
+.pnt-canvas canvas { display: block; width: 100%; height: auto; cursor: crosshair; touch-action: none; image-rendering: pixelated; background: #fff; }
+.pnt-pal { display: flex; gap: 6px; align-items: center; }
+.pnt-cur { flex: none; width: 30px; height: 30px; box-shadow: var(--bevel-in); padding: 4px; }
+.pnt-cur i { display: block; width: 100%; height: 100%; box-shadow: 0 0 0 1px var(--ink); }
+.pnt-sw { flex: 0 1 158px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, 18px); justify-content: start; gap: 2px; }
+.sw { width: 18px; height: 18px; padding: 0; border: 0; cursor: pointer; box-shadow: var(--bevel-soft); }
+.sw.on { box-shadow: 0 0 0 2px var(--face), 0 0 0 3px var(--ink); position: relative; z-index: 1; }
+
+/* ---------- My Computer ---------- */
+.explorer .content { min-height: 150px; }
+.files { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
+.file {
+	width: 92px; padding: 4px 0; border: 0; background: none; text-align: center; cursor: pointer;
+	font: inherit; font-size: 11px; line-height: 1.2; color: var(--ink);
+}
+.file b { display: block; font-size: 32px; font-weight: normal; }
+.file span { padding: 0 3px; }
+.file:focus-visible { outline: 0; }
+.file:focus-visible span, .file:active span { background: var(--purple); color: #fff; outline: 1px dotted #fff; }
+
+/* ---------- sparkle cursor trail ---------- */
+.spark { position: fixed; z-index: var(--z-spark); pointer-events: none; font-size: 16px; animation: fall .8s ease-out forwards; }
+@keyframes fall { to { transform: translateY(24px) scale(.3) rotate(80deg); opacity: 0; } }
+
+/* ---------- phones: one column, windows stack ---------- */
+/* (script.js watches the same 760px breakpoint) */
+@media (max-width: 760px) {
+	body { display: block; padding: 14px 12px calc(var(--taskbar-h) + 30px); }
+	.icons { position: static; display: flex; flex-wrap: wrap; width: auto; gap: 14px; margin-bottom: 16px; }
+	.icon { width: 76px; }
+	.icon.deco { display: none; }
+	.windows { grid-template-columns: 1fr; gap: 20px; margin-left: 0; margin-block: 0; }
+	.win.is-gone { display: none; }
+	.win.popup { left: calc(50vw - var(--pw) / 2); }
+	.col { gap: 20px; }
+	.col.r { padding-top: 0; }
+	.task .lb { display: none; }
+	.task { flex: none; padding: 3px 12px; font-size: 14px; }
 }
 
-#content {
-	font-family: 'Courier New', Courier, monospace;
-	padding-right: 30px;
-	padding-left: 30px;
+/* very narrow screens: tighten the taskbar and drop the word "Start" */
+@media (max-width: 420px) {
+	.task { padding: 3px 8px; }
+	.tray { padding: 3px 6px; font-size: 11px; }
+	details.start summary { padding: 3px 8px; }
+}
+@media (max-width: 340px) {
+	details.start summary .st { display: none; }
 }
 
-#photo img {
-	border-radius: 50%;
-	object-fit: cover;
+@media (prefers-reduced-motion: reduce) {
+	.win.bump { animation: none; }
 }

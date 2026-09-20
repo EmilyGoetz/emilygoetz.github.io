@@ -17,25 +17,142 @@
 		<link rel="stylesheet" type="text/css" href="style.css" />
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<meta property="og:title" content="Emily Goetz">
-		<meta property="og:image" content="https://emilygoetz.com/photo.png">
+		<meta property="og:image" content="https://emilygoetz.com/photo.jpg">
 	</head>
 	<body>
-		<div id="container">
-			<div id="photo">
-				<img src="./photo.png" width="300" height="300" alt="Photo of Emily Goetz" />
+		<div class="icons">
+			<button class="icon" type="button" data-open="computer"><b>🖥️</b><span>My Computer</span></button>
+			<div class="icon deco" aria-hidden="true"><b>🗑️</b><span>Recycle Bin</span></div>
+			<button class="icon" type="button" data-open="about"><b>📝</b><span>About Me.txt</span></button>
+			<button class="icon" type="button" data-open="photo"><b>🖼️</b><span>photo.jpg</span></button>
+			<button class="icon" type="button" data-open="contact"><b>📫</b><span>Contact.exe</span></button>
+		</div>
+
+		<div class="windows">
+			<div class="col">
+				<section class="win notepad" data-win="about" data-icon="📝" data-name="About Me.txt" data-file data-start="menu">
+					<div class="titlebar">📝 About Me.txt - Notepad
+						<span class="btns">
+							<button class="tb" type="button" data-min="about" aria-label="Minimize About Me.txt">_</button>
+							<span class="tb" aria-hidden="true">□</span>
+							<button class="tb" type="button" data-close="about" aria-label="Close About Me.txt">×</button>
+						</span>
+					</div>
+					<div class="menubar"><span>File</span><span>Edit</span><span>Search</span><span>Help</span></div>
+					<div class="content">
+						<p>👋 Hi!</p>
+						<p>My name is Emily.</p>
+						<p>I'm an Android engineer based in NYC.</p>
+						<p class="sub">Right now I'm a staff engineer &amp; tech lead at a dating app. 🫶</p>
+						<p class="sub">I've previously worked at <a href="https://venmo.com/">Venmo</a> and Viacom (now <a href="https://www.paramount.com/">Paramount</a>).</p>
+						<p>I'm a percussionist in a local wind symphony too.</p>
+						<p class="sub">I've been playing percussion for over 20 years! 🥁</p>
+						<p class="sub">I've performed at venues like Carnegie Hall and Lincoln Center, at conferences like the Midwest Clinic and WASBE, and abroad in Japan and South Korea.</p>
+						<p>I love dogs 🐕, plants 🪴, music 🎶, video games 🎮, and traveling ✈️.</p>
+					</div>
+					<div class="status"><span>Ln 9, Col 1</span><span>About Me</span></div>
+				</section>
 			</div>
-			<div id="content">
-				<p>👋 Hi!</p>
-				<p>My name is Emily.</p>
-				<p>I'm an Android engineer based in NYC.</p>
-				<p>&emsp;→ <i>Right now I'm a staff engineer & tech lead at a dating app.</i> 🫶</p>
-				<p>&emsp;→ <i>I've previously worked at <a href="https://venmo.com/">Venmo</a> and Viacom (now <a href="https://www.paramount.com/">Paramount</a>).</i></p>
-				<p>I'm a percussionist in a local wind symphony too.</p>
-				<p>&emsp;→ <i>I've been playing percussion for almost 20 years!</i> 🥁</p>
-				<p>&emsp;→ <i>I've performed at venues like Carnegie Hall and Lincoln Center, at</br> conferences like the Midwest Clinic and WASBE, and abroad in Japan and South Korea.</i></p>
-				<p>I love dogs 🐕, plants 🪴, music 🎶, video games 🎮, and traveling ✈️.</p>
+
+			<div class="col r">
+				<section class="win photo" data-win="photo" data-icon="🖼️" data-name="photo.jpg" data-file data-start="menu">
+					<div class="titlebar">🖼️ photo.jpg - Image Viewer
+						<span class="btns">
+							<button class="tb" type="button" data-min="photo" aria-label="Minimize photo.jpg">_</button>
+							<span class="tb" aria-hidden="true">□</span>
+							<button class="tb" type="button" data-close="photo" aria-label="Close photo.jpg">×</button>
+						</span>
+					</div>
+					<div class="content"><img src="photo.jpg" width="300" height="300" alt="Photo of Emily Goetz" draggable="false"></div>
+					<div class="status"><span>1080 × 1080</span><span>275 KB</span></div>
+				</section>
+
+				<section class="win contact" data-win="contact" data-icon="📫" data-name="Contact.exe" data-file data-start="menu">
+					<div class="titlebar">📫 Contact.exe
+						<span class="btns">
+							<span class="tb" aria-hidden="true">?</span>
+							<button class="tb" type="button" data-close="contact" aria-label="Close Contact.exe">×</button>
+						</span>
+					</div>
+					<div class="content">
+						<div class="field"><span>LinkedIn:</span><span class="val"><a href="https://www.linkedin.com/in/emilyagoetz/">linkedin.com/in/emilyagoetz</a></span></div>
+						<div class="field"><span>E-mail:</span><span class="val"><span class="mail">emily<span class="hide">-remove-</span>@emilygoetz<span class="hide">-nospam-</span>.com</span></span></div>
+						<div class="dlg-btns"><span>OK</span><span>Cancel</span></div>
+					</div>
+				</section>
 			</div>
 		</div>
+
+		<!-- Windows that start closed: script.js builds their title bar, taskbar button and Start / My Computer entries from the data-* attributes -->
+		<!-- Paint -->
+		<section class="win paint popup is-gone" style="--w: 500px; --hh: 230px" data-win="paint" data-icon="🎨" data-name="Paint" data-title="untitled - Paint" data-task-text="untitled - Paint" data-menu="File,Edit,View,Image,Help" data-start="programs">
+			<div class="content">
+				<div class="pnt-tools" role="toolbar" aria-label="Paint tools">
+					<button class="pt on" type="button" data-tool="pencil" aria-label="Pencil" title="Pencil" aria-pressed="true">✏️</button>
+					<button class="pt" type="button" data-tool="brush" aria-label="Brush" title="Brush" aria-pressed="false">🖌️</button>
+					<button class="pt" type="button" data-tool="spray" aria-label="Spray can" title="Spray can" aria-pressed="false">💨</button>
+					<button class="pt" type="button" data-tool="eraser" aria-label="Eraser" title="Eraser" aria-pressed="false">🧽</button>
+					<button class="pt" type="button" id="pUndo" aria-label="Undo" title="Undo"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7 2.5 3.5 5.5 7 8.5M4 5.5h6a3.5 3.5 0 0 1 0 7H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+					<button class="pt" type="button" id="pClear" aria-label="Clear" title="Clear">🗑️</button>
+					<span class="sep"></span>
+					<button class="pt" type="button" data-stamp="🐕" aria-label="Dog stamp" aria-pressed="false">🐕</button>
+					<button class="pt" type="button" data-stamp="🪴" aria-label="Plant stamp" aria-pressed="false">🪴</button>
+					<button class="pt" type="button" data-stamp="🥁" aria-label="Drum stamp" aria-pressed="false">🥁</button>
+					<button class="pt" type="button" data-stamp="🎮" aria-label="Controller stamp" aria-pressed="false">🎮</button>
+					<button class="pt" type="button" data-stamp="✈️" aria-label="Airplane stamp" aria-pressed="false">✈️</button>
+					<button class="pt" type="button" data-stamp="🎶" aria-label="Music stamp" aria-pressed="false">🎶</button>
+					<button class="pt" type="button" data-stamp="✨" aria-label="Sparkle stamp" aria-pressed="false">✨</button>
+					<button class="pt" type="button" data-stamp="💖" aria-label="Heart stamp" aria-pressed="false">💖</button>
+				</div>
+				<div class="pnt-main">
+					<div class="pnt-canvas"><canvas id="pCanvas" width="400" height="260" role="img" aria-label="Drawing canvas: draw with the mouse or your finger"></canvas></div>
+					<div class="pnt-pal"><span class="pnt-cur"><i id="pCur"></i></span><div class="pnt-sw" id="pSwatches"></div></div>
+				</div>
+			</div>
+			<div class="status"><span id="pPos">&nbsp;</span><span>Draw something nice ♡</span></div>
+		</section>
+
+		<!-- My Computer -->
+		<section class="win explorer popup is-gone" style="--w: 380px; --hh: 150px; --dx: -70px" data-win="computer" data-icon="🖥️" data-name="My Computer" data-menu="File,Edit,View,Help">
+			<div class="content">
+				<div class="files"></div>
+			</div>
+			<div class="status"><span data-file-count></span><span>My Computer</span></div>
+		</section>
+
+		<!-- Origin Story.txt -->
+		<section class="win notepad popup scroll is-gone" style="--w: 460px; --hh: 240px; --dx: 60px" data-win="origin" data-icon="📜" data-name="Origin Story.txt" data-title="Origin Story.txt - Notepad" data-menu="File,Edit,Search,Help" data-file>
+			<div class="content">
+				<p>If you discovered coding as a kid in the 2000s like I did, it was probably in one of two ways: Neopets or MySpace. For me, it was Neopets!</p>
+				<p>I remember obsessing over understanding how HTML &amp; CSS worked, and figuring out the tweaks to make my profile, shop, and petpage layouts perfect. A bit later I ended up stumbling into really niche internet forums for people who were making websites <i>like</i> Neopets, and from there started to teach myself PHP &amp; SQL. When I was done with my homework, I was logging onto my account on some free webhosting site and experimenting with making things like my own virtual pet sites (though I never finished or launched any) and a private forum for my friend and me to post our inside jokes on.</p>
+				<p>At one point I also made one of those "fancy text generator" websites (you know, the ones where you can convert your text into something 𝓁𝒾𝓀𝑒 𝓉𝒽𝒾𝓈), and I attribute my interest in product marketing &amp; growth to this project, because I had figured out that I could get lots of views on that website if I shared the link on as many relevant Yahoo Answers questions as I could 🙈</p>
+				<p>Anyway, it was always clear that software engineering was the right path for me, and I went on to get a comp sci degree &amp; have a pretty successful career so far as an engineer!</p>
+				<p>My own story through the classic Neopets-to-engineering pipeline has made me a big advocate for informal and curiosity / creativity-driven pathways into tech &amp; engineering.</p>
+			</div>
+			<div class="status"><span>Ln 1, Col 1</span><span>Origin Story</span></div>
+		</section>
+
+		<div class="taskbar">
+			<details class="start" id="start">
+				<summary aria-label="Start">🌸 <span class="st">Start</span></summary>
+				<ul>
+					<li class="has-sub">
+						<button type="button" aria-haspopup="true">📂 Programs <span class="arr" aria-hidden="true">▸</span></button>
+						<ul class="sub"></ul>
+					</li>
+					<li class="sep" role="separator"></li>
+					<li><button type="button" id="shutdown">⏻ Shut Down…</button></li>
+				</ul>
+			</details>
+			<div class="tasks">
+				<button class="task on" type="button" data-task="about" aria-label="About Me.txt"><span aria-hidden="true">📝</span><span class="lb" aria-hidden="true"> About Me.txt</span></button>
+				<button class="task" type="button" data-task="photo" aria-label="photo.jpg"><span aria-hidden="true">🖼️</span><span class="lb" aria-hidden="true"> photo.jpg</span></button>
+				<button class="task" type="button" data-task="contact" aria-label="Contact.exe"><span aria-hidden="true">📫</span><span class="lb" aria-hidden="true"> Contact.exe</span></button>
+			</div>
+			<div class="tray" id="clock">11:11 AM</div>
+		</div>
+
+		<script src="script.js"></script>
 
 		<div style="display:none">
 			<!-- Start: Copyright 2020 IPnoid.com Service Code (030758-11182020)- DO NOT MODIFY //-->
