@@ -47,7 +47,7 @@
 				taskStrip.appendChild(task);
 			}
 			if (d.start) {
-				var entry = make('li', {}, [make('button', { type: 'button', 'data-open': id, text: d.icon + ' ' + d.name })]);
+				var entry = make('li', {}, [make('button', { type: 'button', 'data-open': id }, [make('span', { 'class': 'ico', text: d.icon }), document.createTextNode(d.name)])]);
 				if (d.start === 'programs') programs.appendChild(entry); else programsItem.before(entry);
 			}
 			if ('file' in d && fileList) {

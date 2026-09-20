@@ -193,7 +193,9 @@ details.start li button {
 	display: block; width: 100%; padding: 6px 10px; border: 0; background: none; text-align: left;
 	font: 13px Tahoma, Verdana, sans-serif; color: var(--ink); cursor: pointer;
 }
-details.start li button svg { display: inline-block; vertical-align: -2px; margin-right: 3px; } /* drawn icon, sized to line up with the emoji ones */
+/* every icon gets the same width, so labels line up whatever the system's emoji happen to measure */
+details.start li button .ico { display: inline-block; min-width: 1.6em; }
+details.start li button svg { vertical-align: -2px; }
 details.start li button:hover, details.start li button:focus-visible { background: linear-gradient(90deg, var(--pink), var(--lav)); color: #fff; outline: 0; }
 details.start li.sep { height: 2px; margin: 3px 2px; box-shadow: inset 0 1px var(--face-d), inset 0 -1px #fff; }
 
@@ -206,7 +208,7 @@ details.start li.has-sub:focus-within > ul.sub,
 details.start li.has-sub.open > ul.sub { display: block; }
 
 /* the button strip can shrink and, as a last resort on very narrow screens, scroll instead of running under the clock */
-.tasks { display: flex; gap: 4px; min-width: 0; padding: 0 3px 3px 0; overflow-x: auto; scrollbar-width: none; }
+.tasks { display: flex; gap: 4px; min-width: 0; padding: 0 3px 0 0; overflow-x: auto; scrollbar-width: none; }
 .tasks::-webkit-scrollbar { display: none; }
 .task {
 	padding: 3px 10px; border: 0; white-space: nowrap; font: inherit; color: var(--ink); cursor: pointer; background: var(--face);
@@ -216,6 +218,9 @@ details.start li.has-sub.open > ul.sub { display: block; }
 .task:focus-visible { outline: 1px dotted var(--ink); outline-offset: -4px; }
 .task[hidden] { display: none; }
 .tray { flex: none; margin-left: auto; padding: 3px 10px; white-space: nowrap; box-shadow: var(--bevel-soft); }
+/* the Start button, the taskbar buttons and the clock share one line height, so they come out the same height (and line up)
+   whatever the fonts, emoji included, happen to measure */
+details.start summary, .task, .tray { line-height: 20px; }
 details.start { flex: none; }
 
 /* ---------- floating windows ---------- */
