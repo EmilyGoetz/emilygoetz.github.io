@@ -193,6 +193,7 @@ details.start li button {
 	display: block; width: 100%; padding: 6px 10px; border: 0; background: none; text-align: left;
 	font: 13px Tahoma, Verdana, sans-serif; color: var(--ink); cursor: pointer;
 }
+details.start li button svg { display: inline-block; vertical-align: -2px; margin-right: 3px; } /* drawn icon, sized to line up with the emoji ones */
 details.start li button:hover, details.start li button:focus-visible { background: linear-gradient(90deg, var(--pink), var(--lav)); color: #fff; outline: 0; }
 details.start li.sep { height: 2px; margin: 3px 2px; box-shadow: inset 0 1px var(--face-d), inset 0 -1px #fff; }
 
