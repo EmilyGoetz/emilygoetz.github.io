@@ -202,7 +202,7 @@ details.start li.sep { height: 2px; margin: 3px 2px; box-shadow: inset 0 1px var
 /* Programs flyout */
 details.start li.has-sub { position: relative; }
 details.start li.has-sub > button .arr { float: right; }
-details.start ul.sub { display: none; top: -3px; bottom: auto; left: 100%; margin: 0; min-width: 130px; }
+details.start ul.sub { display: none; top: -3px; bottom: auto; left: 100%; margin: 0; min-width: 130px; white-space: nowrap; }
 details.start li.has-sub:hover > ul.sub,
 details.start li.has-sub:focus-within > ul.sub,
 details.start li.has-sub.open > ul.sub { display: block; }
@@ -217,6 +217,9 @@ details.start li.has-sub.open > ul.sub { display: block; }
 .task.on { box-shadow: var(--bevel-in); background: var(--face-l); font-weight: bold; }
 .task:focus-visible { outline: 1px dotted var(--ink); outline-offset: -4px; }
 .task[hidden] { display: none; }
+/* script.js adds .icons-only when the buttons' names wouldn't all fit, leaving just the icons (a bit bigger, to be easy to tap) */
+.tasks.icons-only .task .lb { display: none; }
+.tasks.icons-only .task { flex: none; padding: 3px 12px; font-size: 14px; }
 .tray { flex: none; margin-left: auto; padding: 3px 10px; white-space: nowrap; box-shadow: var(--bevel-soft); }
 /* the Start button, the taskbar buttons and the clock share one line height, so they come out the same height (and line up)
    whatever the fonts, emoji included, happen to measure */
@@ -270,6 +273,25 @@ details.start { flex: none; }
 .sw { width: 18px; height: 18px; padding: 0; border: 0; cursor: pointer; box-shadow: var(--bevel-soft); }
 .sw.on { box-shadow: 0 0 0 2px var(--face), 0 0 0 3px var(--ink); position: relative; z-index: 1; }
 
+/* ---------- Cool Text Generator ---------- */
+.win.ctg .content { display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--face); box-shadow: none; }
+.ctg textarea {
+	flex: none; display: block; width: 100%; height: 66px; resize: none; padding: 4px 6px; border: 0; border-radius: 0;
+	font: 16px/1.4 Tahoma, Verdana, sans-serif; color: var(--ink); background: #fff; /* 16px keeps iOS from zooming in on focus */
+	box-shadow: var(--bevel-well);
+}
+.ctg textarea:focus-visible { outline: 1px dotted var(--ink); outline-offset: -4px; }
+.ctg-out { flex: 0 1 300px; min-height: 0; overflow-y: auto; padding: 3px; background: #fff; box-shadow: var(--bevel-well); } /* padded by the bevel's thickness so the rows' highlight stays inside it */
+.ctg-row {
+	display: block; width: 100%; padding: 5px 8px 6px; border: 0; border-bottom: 1px solid var(--face); background: none;
+	text-align: left; font: inherit; color: var(--ink); cursor: pointer;
+}
+.ctg-row small { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; color: var(--purple); }
+.ctg-row .tx { display: block; font-size: 15px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ctg-row:hover, .ctg-row:focus-visible { background: var(--face-l); outline: 0; }
+.ctg-row:focus-visible { box-shadow: inset 0 0 0 1px var(--ink); }
+.ctg-hint { margin: 0; padding: 18px 8px; text-align: center; color: var(--face-d); }
+.ctg-out.empty .ctg-row, .ctg-out:not(.empty) .ctg-hint { display: none; }
 /* ---------- My Computer ---------- */
 .explorer .content { min-height: 150px; }
 .files { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
@@ -298,13 +320,11 @@ details.start { flex: none; }
 	.win.popup { left: calc(50vw - var(--pw) / 2); }
 	.col { gap: 20px; }
 	.col.r { padding-top: 0; }
-	.task .lb { display: none; }
-	.task { flex: none; padding: 3px 12px; font-size: 14px; }
 }
 
 /* very narrow screens: tighten the taskbar and drop the word "Start" */
 @media (max-width: 420px) {
-	.task { padding: 3px 8px; }
+	.task, .tasks.icons-only .task { padding: 3px 8px; }
 	.tray { padding: 3px 6px; font-size: 11px; }
 	details.start summary { padding: 3px 8px; }
 }

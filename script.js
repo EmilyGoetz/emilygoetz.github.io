@@ -10,6 +10,7 @@
 	     data-menu       comma-separated menu bar items
 	     data-file       list it in My Computer
 	     data-start      "menu" or "programs": list it in the Start menu
+	   An element inside a window can carry data-autofocus to take focus whenever that window is opened or brought forward.
 	   Whatever a window doesn't already contain (title bar, taskbar button) is built here. Everything visible on first
 	   load is written out in the HTML, so the page looks the same before this script runs or without it. */
 	function make(tag, props, kids) {
@@ -126,6 +127,11 @@
 		w.scrollIntoView({ block: 'nearest', behavior: smooth && !reduce ? 'smooth' : 'auto' });
 	}
 
+	function focusIn(w) {
+		var f = w.querySelector('[data-autofocus]');
+		if (f) f.focus({ preventScroll: true }); /* the window is already brought into view by reveal() */
+	}
+
 	function show(id) {
 		var w = wins[id];
 		if (w.dataset.busy) return;
@@ -135,16 +141,20 @@
 		if (!gone(w)) {
 			raise(w);
 			reveal(w, true);
+			focusIn(w);
 			if (!reduce) { w.classList.remove('bump'); void w.offsetWidth; play(w, 'bump'); }
 			return;
 		}
-		if (wasClosed) { /* floating windows open where you're looking; a minimized one comes back where it was */
-			w.style.setProperty('--sy', window.scrollY + 'px');
+		if (wasClosed) { /* a window opened from closed starts fresh; a minimized one comes back just as it was */
+			w.style.setProperty('--sy', window.scrollY + 'px'); /* floating windows open where you're looking */
 			w.style.setProperty('--vp', window.innerHeight + 'px');
+			resetPosition(w); /* wherever it was dragged to last time */
+			w.dispatchEvent(new CustomEvent('coldopen')); /* lets a window clear whatever it was holding */
 		}
 		w.classList.remove('is-gone');
 		reveal(w, false); /* jump first (not smooth) so the animation below measures the window where it will end up */
 		raise(w);
+		focusIn(w);
 		if (reduce) return;
 		var d = delta(w, id);
 		w.style.setProperty('--mx', d[0] + 'px');
@@ -226,6 +236,10 @@
 			if (e.button !== 0 || e.target.closest('button')) return;
 			var w = bar.closest('.win');
 			if (w.dataset.busy) return;
+			/* preventDefault() below also stops the browser from moving focus off a text box, and a text box that keeps focus
+			   brings the keyboard back up on phones, so let go of it here */
+			var held = document.activeElement;
+			if (held && held !== document.body && held.blur) held.blur();
 			drag = { w: w, pid: e.pointerId, sx: e.clientX, sy: e.clientY, ox: +w.dataset.x || 0, oy: +w.dataset.y || 0, rect: w.getBoundingClientRect() };
 			bar.setPointerCapture(e.pointerId);
 			if (e.pointerType === 'touch') buzz();
@@ -242,9 +256,8 @@
 
 	/* layout changes between desktop and phone: put the windows back where they started */
 	var mq = window.matchMedia('(max-width: 760px)'); /* the phone breakpoint from style.css */
-	function resetPositions() {
-		ids.forEach(function (id) { var w = wins[id]; w.style.translate = ''; delete w.dataset.x; delete w.dataset.y; });
-	}
+	function resetPosition(w) { w.style.translate = ''; delete w.dataset.x; delete w.dataset.y; }
+	function resetPositions() { ids.forEach(function (id) { resetPosition(wins[id]); }); }
 	if (mq.addEventListener) mq.addEventListener('change', resetPositions);
 
 	raise(wins.about);
@@ -368,9 +381,135 @@
 		cv.addEventListener('pointerleave', function () { pos.innerHTML = '&nbsp;'; });
 	})();
 
+	/* cool text generator */
+	(function () {
+		var input = document.getElementById('ctInput'), out = document.getElementById('ctOut'), count = document.getElementById('ctCount');
+		var chars = function (s) { return Array.from(s); };
+		function swap(map, s) { return chars(s).map(function (c) { return map[c] !== undefined ? map[c] : c; }).join(''); }
+		function cp(n) { return String.fromCodePoint(n); }
+		function letters(upper, lower) {
+			var m = {}, i;
+			for (i = 0; i < 26; i++) { m[cp(65 + i)] = cp(upper + i); m[cp(97 + i)] = cp(lower + i); }
+			return m;
+		}
+		function math(upper, lower, digit, holes) {
+			var m = letters(upper, lower), i;
+			if (digit) for (i = 0; i < 10; i++) m[String(i)] = cp(digit + i);
+			Object.keys(holes || {}).forEach(function (k) { m[k] = cp(holes[k]); });
+			return m;
+		}
+		/* letters only: `from` and `to` line up one to one, and capitals reuse the lowercase forms */
+		function pairs(from, to, capsToo) {
+			var m = {}, f = chars(from), t = chars(to);
+			f.forEach(function (c, i) { m[c] = t[i]; if (capsToo) m[c.toUpperCase()] = t[i]; });
+			return m;
+		}
+		var abc = 'abcdefghijklmnopqrstuvwxyz', ABC = abc.toUpperCase(), nums = '0123456789';
+		function circled(upper, lower, ones, zero) {
+			var m = letters(upper, lower), i;
+			for (i = 1; i < 10; i++) m[String(i)] = cp(ones + i - 1);
+			m['0'] = cp(zero);
+			return m;
+		}
+
+		var script = math(0x1D49C, 0x1D4B6, 0, { B: 0x212C, E: 0x2130, F: 0x2131, H: 0x210B, I: 0x2110, L: 0x2112, M: 0x2133, R: 0x211B, e: 0x212F, g: 0x210A, o: 0x2134 });
+		var boldScript = math(0x1D4D0, 0x1D4EA, 0x1D7CE);
+		var fraktur = math(0x1D504, 0x1D51E, 0, { C: 0x212D, H: 0x210C, I: 0x2111, R: 0x211C, Z: 0x2128 });
+		var boldFraktur = math(0x1D56C, 0x1D586, 0x1D7CE);
+		var doubleStruck = math(0x1D538, 0x1D552, 0x1D7D8, { C: 0x2102, H: 0x210D, N: 0x2115, P: 0x2119, Q: 0x211A, R: 0x211D, Z: 0x2124 });
+		var smallCaps = pairs(abc, 'ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ', true);
+		var flip = pairs(ABC + abc + nums + ".,'!?()[]{}<>&_", '∀ᗺƆᗡƎℲ⅁HIſ⋊˥WNOԀΌᴚS⊥∩ΛMX⅄Z' + 'ɐqɔpǝɟƃɥᴉɾʞlɯuodbɹsʇnʌʍxʎz' + '0ƖᄅƐㄣϛ9ㄥ86' + "˙',¡¿)(][}{><⅋‾");
+		var tiny = Object.assign(pairs(abc, 'ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖqʳˢᵗᵘᵛʷˣʸᶻ', true), pairs(nums, '⁰¹²³⁴⁵⁶⁷⁸⁹'));
+		var bubbles = circled(0x24B6, 0x24D0, 0x2460, 0x24EA);
+		var darkBubbles = Object.assign(pairs(abc, '🅐🅑🅒🅓🅔🅕🅖🅗🅘🅙🅚🅛🅜🅝🅞🅟🅠🅡🅢🅣🅤🅥🅦🅧🅨🅩', true), pairs(nums, '⓿❶❷❸❹❺❻❼❽❾'));
+		var squares = pairs(abc, '🄰🄱🄲🄳🄴🄵🄶🄷🄸🄹🄺🄻🄼🄽🄾🄿🅀🅁🅂🅃🅄🅅🅆🅇🅈🅉', true);
+		var darkSquares = pairs(abc, '🅰🅱🅲🅳🅴🅵🅶🅷🅸🅹🅺🅻🅼🅽🅾🅿🆀🆁🆂🆃🆄🆅🆆🆇🆈🆉', true);
+		var curvy = pairs(abc, 'ᗩᗷᑕᗪᗴᖴᘜᕼIᒍKᒪᗰᑎOᑭᑫᖇᏚTᑌᐯᗯ᙭Yᘔ', true);
+		var squiggly = pairs(abc, 'ꪖ᥇ᥴᦔꫀᠻᧁꫝỉʝᛕꪶꪑꪀꪮρꪇɾ᥉ꪻꪊꪜ᭙᥊ꪗɀ', true);
+		var mirror = pairs(ABC + abc + '3?()[]{}<>/\\', 'AᗺƆᗡƎꟻGHIႱꓘ⅃MИOꟼϘЯƧTUVWXYƸ' + 'ɒdɔbɘꟻϱʜiįʞlmᴎoqpɿƨƚuvwxyz' + 'Ɛ⸮)(][}{><\\/');
+
+		function wide(s) {
+			return chars(s).map(function (c) { var n = c.charCodeAt(0); return c === ' ' ? '　' : n > 32 && n < 127 ? cp(n + 0xFEE0) : c; }).join('');
+		}
+		function backwards(map, reverseLines) { /* flipping the letters and reading them backwards; upside down also reverses the lines, a mirror keeps their order */
+			return function (s) {
+				var lines = s.split('\n').map(function (l) { return chars(swap(map, l)).reverse().join(''); });
+				return (reverseLines ? lines.reverse() : lines).join('\n');
+			};
+		}
+		function combine(mark) { return function (s) { return chars(s).map(function (c) { return /\s/.test(c) ? c : c + mark; }).join(''); }; }
+		function using(map) { return function (s) { return swap(map, s); }; }
+
+		var styles = [
+			['Script', using(script)],
+			['Bold Script', using(boldScript)],
+			['Gothic', using(fraktur)],
+			['Bold Gothic', using(boldFraktur)],
+			['Double-Struck', using(doubleStruck)],
+			['Bubbles', using(bubbles)],
+			['Dark Bubbles', using(darkBubbles)],
+			['Squares', using(squares)],
+			['Dark Squares', using(darkSquares)],
+			['Curvy', using(curvy)],
+			['Squiggly', using(squiggly)],
+			['Bold', using(math(0x1D400, 0x1D41A, 0x1D7CE))],
+			['Italic', using(math(0x1D434, 0x1D44E, 0, { h: 0x210E }))],
+			['Bold Italic', using(math(0x1D468, 0x1D482, 0x1D7CE))],
+			['Sans', using(math(0x1D5A0, 0x1D5BA, 0x1D7E2))],
+			['Sans Bold', using(math(0x1D5D4, 0x1D5EE, 0x1D7EC))],
+			['Sans Italic', using(math(0x1D608, 0x1D622, 0x1D7E2))],
+			['Sans Bold Italic', using(math(0x1D63C, 0x1D656, 0x1D7EC))],
+			['Monospace', using(math(0x1D670, 0x1D68A, 0x1D7F6))],
+			['Wide', wide],
+			['Small Caps', using(smallCaps)],
+			['Tiny', using(tiny)],
+			['Upside Down', backwards(flip, true)],
+			['Mirror', backwards(mirror, false)],
+			['Strikethrough', combine('̶')],
+			['Underline', combine('̲')]
+		];
+
+		var rows = styles.map(function (st) {
+			var text = make('span', { 'class': 'tx' }), cue = make('span', { 'class': 'cp', text: 'Copy' }), timer = 0;
+			var b = make('button', { 'class': 'ctg-row', type: 'button' }, [make('small', {}, [make('span', { text: st[0] }), cue]), text]);
+			b.addEventListener('click', function () {
+				if (!navigator.clipboard) return;
+				buzz();
+				navigator.clipboard.writeText(text.textContent).then(function () {
+					cue.textContent = 'Copied!';
+					clearTimeout(timer);
+					timer = setTimeout(function () { cue.textContent = 'Copy'; }, 1200);
+				}, function () {});
+			});
+			out.appendChild(b);
+			return text;
+		});
+
+		function render() {
+			var s = input.value;
+			count.textContent = s.length + ' / ' + input.maxLength;
+			out.classList.toggle('empty', !s);
+			if (s) styles.forEach(function (st, i) { rows[i].textContent = st[1](s); });
+		}
+		input.addEventListener('input', render);
+		input.closest('.win').addEventListener('coldopen', function () { input.value = ''; out.scrollTop = 0; render(); }); /* reopened after closing: start over */
+		render();
+	})();
+
+	/* taskbar buttons show their names while there's room for all of them, and fall back to just their icons when there isn't
+	   (measured rather than tied to a screen width, since the number of open windows changes how much room they need) */
+	var strip = document.querySelector('.tasks');
+	function fitTasks() {
+		strip.classList.remove('icons-only');
+		if (strip.scrollWidth > strip.clientWidth) strip.classList.add('icons-only');
+	}
+	window.addEventListener('resize', fitTasks);
+	new MutationObserver(fitTasks).observe(strip, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+	fitTasks();
+
 	/* clock */
 	var clock = document.getElementById('clock');
-	function tick() { clock.textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+	function tick() { clock.textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); fitTasks(); } /* the clock's width changes with the time */
 	tick(); setInterval(tick, 30000);
 
 	/* sparkle cursor trail */
