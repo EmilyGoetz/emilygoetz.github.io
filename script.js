@@ -1,8 +1,11 @@
 (function () {
 	var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-	/* Each window is declared in index.html and described with data attributes:
+	/* Each window is declared in _layouts/desktop.html and described with data attributes:
 	     data-win        its id, used by the buttons that open, minimize and close it
+	     data-url        gives it its own address (/paint/): the address bar follows whichever window is on top, and that
+	                     page (the folder of the same name) opens with the window already in front
+	     data-page-title browser tab title (Emily Goetz | ...) while it's on top, if it differs from the name
 	     data-icon       emoji shown in its title bar, taskbar button, Start entry and My Computer entry
 	     data-name       file / program name (same places, plus the button labels)
 	     data-title      title bar text, if it differs from the name
@@ -66,10 +69,22 @@
 	var start = document.getElementById('start');
 	var taskbar = document.querySelector('.taskbar');
 
+	/* The address bar and tab title follow the window on top: /paint/ for one with a data-url, / for the rest. It replaces
+	   the current history entry rather than adding one, so Back leaves the site instead of stepping through windows. */
+	var homeTitle = document.body.dataset.homeTitle || document.title, routed = false;
+	function syncUrl() {
+		if (!routed) return; /* until the page's own window has been opened, don't overwrite the address it loaded with */
+		var url = active && active.dataset.url ? '/' + active.dataset.url + '/' : '/';
+		document.title = active && active.dataset.url ? 'Emily Goetz | ' + (active.dataset.pageTitle || active.dataset.name) : homeTitle;
+		if (location.pathname === url) return;
+		try { history.replaceState(null, '', url); } catch (e) {} /* not allowed from a file:// page */
+	}
+
 	function gone(w) { return w.classList.contains('is-gone'); }
 	function setActive(w) {
 		active = w;
 		ids.forEach(function (id) { tasks[id].classList.toggle('on', wins[id] === w); });
+		syncUrl();
 	}
 	function raise(w) { if (+w.style.zIndex !== z) w.style.zIndex = ++z; setActive(w); } /* a window already on top isn't restyled again */
 	function topVisible() {
@@ -132,7 +147,8 @@
 		if (f) f.focus({ preventScroll: true }); /* the window is already brought into view by reveal() */
 	}
 
-	function show(id) {
+	/* instant: skip the opening animation and focus (for the window a page loads with) */
+	function show(id, instant) {
 		var w = wins[id];
 		if (w.dataset.busy) return;
 		/* a button coming back joins the end of the strip, like a newly opened window */
@@ -154,8 +170,8 @@
 		w.classList.remove('is-gone');
 		reveal(w, false); /* jump first (not smooth) so the animation below measures the window where it will end up */
 		raise(w);
-		focusIn(w);
-		if (reduce) return;
+		if (!instant) focusIn(w);
+		if (reduce || instant) return;
 		var d = delta(w, id);
 		w.style.setProperty('--mx', d[0] + 'px');
 		w.style.setProperty('--my', d[1] + 'px');
@@ -261,6 +277,11 @@
 	if (mq.addEventListener) mq.addEventListener('change', resetPositions);
 
 	raise(wins.about);
+	/* a window's own page (/paint/) loads the same desktop, with that window opened in front */
+	var landing = wins[document.body.dataset.app];
+	if (landing) show(landing.dataset.win, true);
+	routed = true;
+	syncUrl();
 
 	/* start menu: Programs flyout (click for touch, hover/focus handled in CSS) */
 	document.querySelectorAll('#start li.has-sub > button').forEach(function (b) {

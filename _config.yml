@@ -1,0 +1,6 @@
+title: Emily Goetz | Personal Site
+description: Emily Goetz is an Android engineer & percussionist based in NYC, and this is her personal website.
+url: https://emilygoetz.com
+
+plugins:
+  - jekyll-sitemap

@@ -41,6 +41,16 @@
 
 * { box-sizing: border-box; }
 
+/* text for screen readers and search engines that the desktop doesn't show (each app's page describes it) */
+.sr-only {
+	position: absolute;
+	width: 1px; height: 1px;
+	margin: -1px; padding: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
 /* Whatever is dragged past the right edge must not widen the page: mobile browsers answer that by zooming out or
    panning, which carries the fixed taskbar out of view. The body is positioned, so the floating windows are clipped
    with it, and it clips sideways without becoming a scroll container (hidden first, for browsers without clip). */
