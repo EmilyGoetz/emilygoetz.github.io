@@ -28,8 +28,14 @@
 		<meta property="og:url" content="{{ page.url | absolute_url }}">
 		<meta property="og:image" content="https://emilygoetz.com/photo.jpg">
 	</head>
-	<body data-app="{{ page.app }}" data-home-title="{{ site.title }}">
-		{%- if content != "" %}
+	{%- comment -%} the window this page opens (a document without an `app` gets an id from its address, like _includes/document.html) {%- endcomment -%}
+	{%- assign app = page.app %}
+	{%- if app == nil and page.layout == "document" %}{% assign app = page.url | slugify %}{% endif %}
+	<body data-app="{{ app }}" data-home-title="{{ site.title }}">
+		{%- comment -%} a window's own page (/paint/) opens with only that window, so the ones the home page starts with are closed {%- endcomment -%}
+		{%- if app %}{% assign closed = " is-gone" %}{% assign closed_task = " hidden" %}{% endif %}
+		{%- comment -%} a page's description, for screen readers and search engines (a document's page shows its text in its window instead) {%- endcomment -%}
+		{%- if content != "" and page.layout != "document" %}
 		<div class="sr-only">{{ content }}</div>
 		{%- endif %}
 		<div class="icons">
@@ -42,7 +48,7 @@
 
 		<div class="windows">
 			<div class="col">
-				<section class="win notepad" data-win="about" data-icon="📝" data-name="About Me.txt" data-file data-start="menu">
+				<section class="win notepad scroll{{ closed }}" data-win="about" data-icon="📝" data-name="About Me.txt" data-file data-start="menu">
 					<div class="titlebar">📝 About Me.txt - Notepad
 						<span class="btns">
 							<button class="tb" type="button" data-min="about" aria-label="Minimize About Me.txt">_</button>
@@ -67,7 +73,7 @@
 			</div>
 
 			<div class="col r">
-				<section class="win photo" data-win="photo" data-icon="🖼️" data-name="photo.jpg" data-file data-start="menu">
+				<section class="win photo{{ closed }}" data-win="photo" data-icon="🖼️" data-name="photo.jpg" data-file data-start="menu">
 					<div class="titlebar">🖼️ photo.jpg - Image Viewer
 						<span class="btns">
 							<button class="tb" type="button" data-min="photo" aria-label="Minimize photo.jpg">_</button>
@@ -79,7 +85,7 @@
 					<div class="status"><span>1080 × 1080</span><span>275 KB</span></div>
 				</section>
 
-				<section class="win contact" data-win="contact" data-icon="📫" data-name="Contact.exe" data-file data-start="menu">
+				<section class="win contact{{ closed }}" data-win="contact" data-icon="📫" data-name="Contact.exe" data-file data-start="menu">
 					<div class="titlebar">📫 Contact.exe
 						<span class="btns">
 							<span class="tb" aria-hidden="true">?</span>
@@ -89,15 +95,30 @@
 					<div class="content">
 						<div class="field"><span>LinkedIn:</span><span class="val"><a href="https://www.linkedin.com/in/emilyagoetz/">linkedin.com/in/emilyagoetz</a></span></div>
 						<div class="field"><span>E-mail:</span><span class="val"><span class="mail">emily<span class="hide">-remove-</span>@emilygoetz<span class="hide">-nospam-</span>.com</span></span></div>
-						<div class="dlg-btns"><span>OK</span><span>Cancel</span></div>
+						<div class="dlg-btns"><button type="button" data-close="contact">OK</button><button type="button" data-close="contact">Cancel</button></div>
 					</div>
 				</section>
 			</div>
 		</div>
 
-		<!-- Windows that start closed: script.js builds their title bar, taskbar button and Start / My Computer entries from the data-* attributes -->
+		{%- if page.needs_js %}
+
+		<noscript>
+			<section class="win contact popup nojs" style="--w: 340px; --hh: 90px">
+				<div class="titlebar">⚠️ {{ page.title }}</div>
+				<div class="content">
+					<p>{{ page.title }} needs JavaScript to run. Turn it on, then press OK to open it.</p>
+					<div class="dlg-btns"><a href="{{ page.url }}">OK</a></div>
+				</div>
+			</section>
+		</noscript>
+		{%- endif %}
+
+		<!-- Windows that start closed: script.js builds their title bar, taskbar button and Start / My Computer entries from the data-* attributes.
+		     A program with its own page takes them from that page's front matter (see _includes/window-attrs.html). -->
 		<!-- Paint -->
-		<section class="win paint popup is-gone" style="--w: 500px; --hh: 230px" data-win="paint" data-url="paint" data-icon="🎨" data-name="Paint" data-title="untitled - Paint" data-task-text="untitled - Paint" data-menu="File,Edit,View,Image,Help" data-start="programs">
+		{%- assign program = site.pages | where: "app", "paint" | first %}
+		<section class="win paint popup is-gone" {% include window-attrs.html page=program %}>
 			<div class="content">
 				<div class="pnt-tools" role="toolbar" aria-label="Paint tools">
 					<button class="pt on" type="button" data-tool="pencil" aria-label="Pencil" title="Pencil" aria-pressed="true">✏️</button>
@@ -125,7 +146,8 @@
 		</section>
 
 		<!-- Cool Text Generator -->
-		<section class="win ctg popup scroll is-gone" style="--w: 460px; --hh: 250px; --dx: -40px" data-win="cooltext" data-url="cool-text" data-icon="✨" data-name="Cool Text Generator" data-title="Cool Text Generator.exe" data-menu="File,Edit,View,Help" data-start="programs">
+		{%- assign program = site.pages | where: "app", "cooltext" | first %}
+		<section class="win ctg popup scroll is-gone" {% include window-attrs.html page=program %}>
 			<div class="content">
 				<textarea id="ctInput" data-autofocus maxlength="250" rows="3" spellcheck="false" autocomplete="off" aria-label="Text to convert"></textarea>
 				<div class="ctg-out empty" id="ctOut">
@@ -143,17 +165,11 @@
 			<div class="status"><span data-file-count></span><span>My Computer</span></div>
 		</section>
 
-		<!-- Origin Story.txt -->
-		<section class="win notepad popup scroll is-gone" style="--w: 460px; --hh: 240px; --dx: 60px" data-win="origin" data-url="origin-story" data-page-title="Origin Story" data-icon="📜" data-name="Origin Story.txt" data-title="Origin Story.txt - Notepad" data-menu="File,Edit,Search,Help" data-file>
-			<div class="content">
-				<p>If you discovered coding as a kid in the 2000s like I did, it was probably in one of two ways: Neopets or MySpace. For me, it was Neopets!</p>
-				<p>I remember obsessing over understanding how HTML &amp; CSS worked, and figuring out the tweaks to make my profile, shop, and petpage layouts perfect. A bit later I ended up stumbling into really niche internet forums for people who were making websites <i>like</i> Neopets, and from there started to teach myself PHP &amp; SQL. When I was done with my homework, I was logging onto my account on some free webhosting site and experimenting with making things like my own virtual pet sites (though I never finished or launched any) and a private forum for my friend and me to post our inside jokes on.</p>
-				<p>At one point I also made one of those "fancy text generator" websites (you know, the ones where you can convert your text into something 𝓁𝒾𝓀𝑒 𝓉𝒽𝒾𝓈), and I attribute my interest in product marketing &amp; growth to this project, because I had figured out that I could get lots of views on that website if I shared the link on as many relevant Yahoo Answers questions as I could 🙈</p>
-				<p>Anyway, it was always clear that software engineering was the right path for me, and I went on to get a comp sci degree &amp; have a pretty successful career so far as an engineer!</p>
-				<p>My own story through the classic Neopets-to-engineering pipeline has made me a big advocate for informal and curiosity / creativity-driven pathways into tech &amp; engineering.</p>
-			</div>
-			<div class="status"><span>Ln 1, Col 1</span><span>Origin Story</span></div>
-		</section>
+		<!-- Documents: every page with `layout: document` (see _includes/document.html) -->
+		{%- assign documents = site.pages | where: "layout", "document" %}
+		{%- for doc in documents %}
+		{% include document.html doc=doc %}
+		{%- endfor %}
 
 		<div class="taskbar">
 			<details class="start" id="start">
@@ -168,9 +184,9 @@
 				</ul>
 			</details>
 			<div class="tasks">
-				<button class="task on" type="button" data-task="about" aria-label="About Me.txt"><span aria-hidden="true">📝</span><span class="lb" aria-hidden="true"> About Me.txt</span></button>
-				<button class="task" type="button" data-task="photo" aria-label="photo.jpg"><span aria-hidden="true">🖼️</span><span class="lb" aria-hidden="true"> photo.jpg</span></button>
-				<button class="task" type="button" data-task="contact" aria-label="Contact.exe"><span aria-hidden="true">📫</span><span class="lb" aria-hidden="true"> Contact.exe</span></button>
+				<button class="task{% unless app %} on{% endunless %}" type="button" data-task="about"{{ closed_task }} aria-label="About Me.txt"><span aria-hidden="true">📝</span><span class="lb" aria-hidden="true"> About Me.txt</span></button>
+				<button class="task" type="button" data-task="photo"{{ closed_task }} aria-label="photo.jpg"><span aria-hidden="true">🖼️</span><span class="lb" aria-hidden="true"> photo.jpg</span></button>
+				<button class="task" type="button" data-task="contact"{{ closed_task }} aria-label="Contact.exe"><span aria-hidden="true">📫</span><span class="lb" aria-hidden="true"> Contact.exe</span></button>
 			</div>
 			<div class="tray" id="clock">11:11 AM</div>
 		</div>

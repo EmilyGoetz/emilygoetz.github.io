@@ -4,7 +4,8 @@
 	/* Each window is declared in _layouts/desktop.html and described with data attributes:
 	     data-win        its id, used by the buttons that open, minimize and close it
 	     data-url        gives it its own address (/paint/): the address bar follows whichever window is on top, and that
-	                     page (the folder of the same name) opens with the window already in front
+	                     page opens with the window already in front
+	     data-src        a document window that's empty here: its text is loaded from this page the first time it opens
 	     data-page-title browser tab title (Emily Goetz | ...) while it's on top, if it differs from the name
 	     data-icon       emoji shown in its title bar, taskbar button, Start entry and My Computer entry
 	     data-name       file / program name (same places, plus the button labels)
@@ -69,12 +70,12 @@
 	var start = document.getElementById('start');
 	var taskbar = document.querySelector('.taskbar');
 
-	/* The address bar and tab title follow the window on top: /paint/ for one with a data-url, / for the rest. It replaces
+	/* The address bar and tab title follow the window on top: its data-url if it has one (/paint/), / for the rest. It replaces
 	   the current history entry rather than adding one, so Back leaves the site instead of stepping through windows. */
 	var homeTitle = document.body.dataset.homeTitle || document.title, routed = false;
 	function syncUrl() {
 		if (!routed) return; /* until the page's own window has been opened, don't overwrite the address it loaded with */
-		var url = active && active.dataset.url ? '/' + active.dataset.url + '/' : '/';
+		var url = active && active.dataset.url || '/';
 		document.title = active && active.dataset.url ? 'Emily Goetz | ' + (active.dataset.pageTitle || active.dataset.name) : homeTitle;
 		if (location.pathname === url) return;
 		try { history.replaceState(null, '', url); } catch (e) {} /* not allowed from a file:// page */
@@ -147,23 +148,55 @@
 		if (f) f.focus({ preventScroll: true }); /* the window is already brought into view by reveal() */
 	}
 
-	/* instant: skip the opening animation and focus (for the window a page loads with) */
+	/* A document window's text lives in its own page, which has the same window written out open: copy its content across.
+	   Until it arrives the window opens empty; if it fails, it says so and tries again the next time it's opened. */
+	function load(w) {
+		var src = w.dataset.src, box = w.querySelector('.content');
+		if (!src || w.dataset.loading) return;
+		w.dataset.loading = '1';
+		fetch(src).then(function (r) {
+			if (!r.ok) throw new Error(r.status);
+			return r.text();
+		}).then(function (html) {
+			var page = new DOMParser().parseFromString(html, 'text/html');
+			var text = page.querySelector('[data-win="' + w.dataset.win + '"] .content');
+			if (!text) throw new Error('no window');
+			box.replaceChildren.apply(box, Array.from(text.childNodes));
+			delete w.dataset.src;
+		}).catch(function () {
+			box.replaceChildren(make('p', { text: 'Couldn’t open ' + w.dataset.name + '. Close it and try again?' }));
+		}).then(function () { delete w.dataset.loading; });
+	}
+
+	/* a little bounce, so a window that's already open shows it's the one being asked for, even when nothing covered it
+	   (not when the window itself is pressed: it's plain which one that is) */
+	function bump(w) {
+		if (reduce) return;
+		w.classList.remove('bump'); void w.offsetWidth; /* restart it if it's already playing */
+		play(w, 'bump');
+	}
+
+	/* instant: skip the animation, focus and scrolling (for the window a page loads with) */
 	function show(id, instant) {
 		var w = wins[id];
 		if (w.dataset.busy) return;
+		load(w);
 		/* a button coming back joins the end of the strip, like a newly opened window */
 		var wasClosed = tasks[id].hidden;
 		if (wasClosed) { tasks[id].hidden = false; tasks[id].parentNode.appendChild(tasks[id]); }
 		if (!gone(w)) {
 			raise(w);
+			if (instant) return; /* a document's own page, which is written out with its window already open */
 			reveal(w, true);
 			focusIn(w);
-			if (!reduce) { w.classList.remove('bump'); void w.offsetWidth; play(w, 'bump'); }
+			bump(w);
 			return;
 		}
 		if (wasClosed) { /* a window opened from closed starts fresh; a minimized one comes back just as it was */
-			w.style.setProperty('--sy', window.scrollY + 'px'); /* floating windows open where you're looking */
-			w.style.setProperty('--vp', window.innerHeight + 'px');
+			if (mq.matches) { /* on phones, where the page scrolls, floating windows open where you're looking */
+				w.style.setProperty('--sy', window.scrollY + 'px');
+				w.style.setProperty('--vp', window.innerHeight + 'px');
+			}
 			resetPosition(w); /* wherever it was dragged to last time */
 			w.dispatchEvent(new CustomEvent('coldopen')); /* lets a window clear whatever it was holding */
 		}
@@ -194,7 +227,7 @@
 			var w = wins[id];
 			if (gone(w)) show(id);
 			else if (w === active) hide(id, 'min');
-			else { raise(w); reveal(w, true); }
+			else { raise(w); reveal(w, true); bump(w); }
 		});
 	});
 	document.getElementById('shutdown').addEventListener('click', function () {
@@ -270,16 +303,22 @@
 		bar.addEventListener('lostpointercapture', onEnd);
 	});
 
-	/* layout changes between desktop and phone: put the windows back where they started */
+	/* layout changes between desktop and phone: put the windows back where they started (and a floating window opened on
+	   a scrolled phone page back on the desktop's one screen) */
 	var mq = window.matchMedia('(max-width: 760px)'); /* the phone breakpoint from style.css */
 	function resetPosition(w) { w.style.translate = ''; delete w.dataset.x; delete w.dataset.y; }
-	function resetPositions() { ids.forEach(function (id) { resetPosition(wins[id]); }); }
+	function resetPositions() {
+		ids.forEach(function (id) {
+			resetPosition(wins[id]);
+			wins[id].style.removeProperty('--sy');
+			wins[id].style.removeProperty('--vp');
+		});
+	}
 	if (mq.addEventListener) mq.addEventListener('change', resetPositions);
 
-	raise(wins.about);
-	/* a window's own page (/paint/) loads the same desktop, with that window opened in front */
+	/* a window's own page (/paint/) loads the same desktop with only that window open (the layout closes the rest) */
 	var landing = wins[document.body.dataset.app];
-	if (landing) show(landing.dataset.win, true);
+	if (landing) show(landing.dataset.win, true); else raise(wins.about);
 	routed = true;
 	syncUrl();
 

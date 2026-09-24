@@ -1,0 +1,32 @@
+{%- comment -%}
+	A text window whose text lives in its own page (a Markdown file with `layout: document` and a `window` block
+	describing the window in its front matter, see origin-story/index.md and _includes/window-attrs.html). On that page
+	the window is written out open, title bar and all, so it reads the same without JavaScript. Every other page gets an
+	empty one that script.js fills from the page (data-src) the first time it opens.
+{%- endcomment -%}
+{%- assign doc = include.doc -%}
+{%- assign w = doc.window -%}
+{%- comment -%} the same id window-attrs.html gives it, for the title bar buttons {%- endcomment -%}
+{%- assign id = doc.app -%}
+{%- if id == nil %}{% assign id = doc.url | slugify %}{% endif -%}
+{%- if doc.url == page.url %}{% assign here = true %}{% else %}{% assign here = false %}{% endif -%}
+<section class="win notepad popup scroll{% unless here %} is-gone{% endunless %}" {% include window-attrs.html page=doc %} data-file{% unless here %} data-src="{{ doc.url }}"{% endunless %}>
+	{%- if here %}
+	<div class="titlebar">{{ w.icon }} {{ w.title | default: w.name }}
+		<span class="btns">
+			<button class="tb" type="button" data-min="{{ id }}" aria-label="Minimize {{ w.name }}">_</button>
+			<span class="tb" aria-hidden="true">□</span>
+			<button class="tb" type="button" data-close="{{ id }}" aria-label="Close {{ w.name }}">×</button>
+		</span>
+	</div>
+	{%- if w.menu %}
+	<div class="menubar">{% assign items = w.menu | split: "," %}{% for m in items %}<span>{{ m }}</span>{% endfor %}</div>
+	{%- endif %}
+	<div class="content">
+		{{ content }}
+	</div>
+	{%- else %}
+	<div class="content"></div>
+	{%- endif %}
+	<div class="status"><span>Ln 1, Col 1</span><span>{{ w.status | default: doc.title }}</span></div>
+</section>

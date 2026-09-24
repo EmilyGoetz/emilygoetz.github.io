@@ -29,6 +29,10 @@
 	--icons-w: 118px; /* room kept free on the left for the desktop icons */
 	--stage-w: 960px; /* widest the group of windows gets */
 	--taskbar-h: 34px;
+	--pad-t: 22px; /* room above and below the windows on desktop */
+	--pad-b: calc(var(--taskbar-h) + 30px);
+	--fit-h: calc(100 * var(--vh) - var(--pad-t) - var(--pad-b)); /* what's left for them in between */
+	--win-min-h: 170px; /* the least a window that scrolls or shrinks to fit is squeezed to: ~4 lines of text, a 100px photo */
 	/* window z-indexes count up from script.js; these stay above all of them */
 	--z-taskbar: 100000;
 	--z-spark: 100001;
@@ -60,7 +64,7 @@ body {
 	position: relative;
 	margin: 0;
 	min-height: calc(100 * var(--vh));
-	padding: 22px 20px calc(var(--taskbar-h) + 30px) var(--icons-w);
+	padding: var(--pad-t) 20px var(--pad-b) var(--icons-w);
 	overflow-x: hidden;
 	overflow-x: clip;
 	font: 12px/1.45 Tahoma, Verdana, sans-serif;
@@ -150,10 +154,15 @@ button.tb:focus-visible { outline: 1px dotted var(--ink); outline-offset: -3px; 
 .field { display: grid; grid-template-columns: 62px 1fr; gap: 6px; align-items: center; margin-bottom: 6px; }
 .field .val { background: #fff; padding: 2px 6px; box-shadow: var(--bevel-in); overflow-wrap: anywhere; }
 .dlg-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
-.dlg-btns span {
-	min-width: 70px; padding: 3px 8px; text-align: center; background: var(--face);
-	box-shadow: var(--bevel-out);
+.dlg-btns button, .dlg-btns a {
+	min-width: 70px; padding: 3px 8px; border: 0; text-align: center; font: inherit; color: inherit; text-decoration: none;
+	background: var(--face); box-shadow: var(--bevel-out); cursor: pointer;
 }
+.dlg-btns button:active, .dlg-btns a:active { box-shadow: var(--bevel-in); }
+.dlg-btns button:focus-visible, .dlg-btns a:focus-visible { outline: 1px dotted var(--ink); outline-offset: -4px; }
+
+.nojs .titlebar { cursor: default; }
+.nojs p { margin: 0; }
 
 /* ---------- window open / close animations ---------- */
 @keyframes to-taskbar {
@@ -254,7 +263,7 @@ details.start { flex: none; }
 /* a closed one takes no space at all, so it can't stretch the page it's positioned on */
 .win.popup.is-gone { display: none; }
 /* a window that can be taller than the screen scrolls its content instead */
-.win.popup.scroll { max-height: calc(var(--vp) - var(--ot) - var(--taskbar-h) - 22px); }
+.win.popup.scroll { max-height: calc(var(--vp) - var(--ot) - var(--taskbar-h) - 22px); min-height: var(--win-min-h); }
 .win.popup.scroll:not(.is-gone) { display: flex; flex-direction: column; }
 .win.scroll .content { flex: 1; min-height: 0; overflow-y: auto; }
 
@@ -317,6 +326,31 @@ details.start { flex: none; }
 /* ---------- sparkle cursor trail ---------- */
 .spark { position: fixed; z-index: var(--z-spark); pointer-events: none; font-size: 16px; animation: fall .8s ease-out forwards; }
 @keyframes fall { to { transform: translateY(24px) scale(.3) rotate(80deg); opacity: 0; } }
+
+/* ---------- desktop: one screen, no scrolling ---------- */
+/* Wider than a phone, the page is exactly one screen tall and never scrolls, so every window starts where you can see
+   it however short the browser is. The columns stop at the taskbar: About Me.txt scrolls its text and photo.jpg shrinks
+   its picture to make room. Floating windows open at the live screen height (script.js only pins --vp on phones), and
+   Paint shrinks its canvas like photo.jpg. Anything dragged past the bottom is cut off instead of growing the page. */
+@media (width > 760px) {
+	body { height: calc(100 * var(--vh)); overflow: hidden; overflow: clip; }
+	.col { display: flex; flex-direction: column; max-height: var(--fit-h); }
+	.col > .win { display: flex; flex-direction: column; flex: none; }
+	/* only these give way (Contact.exe keeps its size), and only down to a floor on the window itself: what's inside has
+	   none of its own, so the text box and the picture shrink right along with it and stop when it does */
+	.col > .win.scroll, .col > .photo { flex: 0 1 auto; min-height: var(--win-min-h); }
+	/* and if even that's too tall, Contact.exe stays above the taskbar by sliding up over photo.jpg */
+	.col > .contact { position: sticky; bottom: var(--pad-b); }
+	.col > .win > * { flex: none; }
+	.col > .win > .content { flex: 0 1 auto; min-height: 0; }
+	.col > .win.scroll > .content { overflow-y: auto; }
+	/* the picture's height gives way first, and its width follows (100cqi keeps it from ever being wider than the window) */
+	.photo .content { display: flex; flex-direction: column; align-items: center; container-type: inline-size; }
+	.photo img { flex: 0 1 min(300px, 100cqi); width: auto; height: auto; min-height: 0; }
+	/* Paint's canvas keeps its shape and gets smaller instead (everything else in the window is ~130px tall) */
+	.pnt-canvas { align-self: flex-start; max-width: 100%; }
+	.pnt-canvas canvas { width: auto; max-width: 100%; max-height: calc(var(--vp) - var(--ot) - var(--taskbar-h) - 22px - 130px); }
+}
 
 /* ---------- phones: one column, windows stack ---------- */
 /* (script.js watches the same 760px breakpoint) */

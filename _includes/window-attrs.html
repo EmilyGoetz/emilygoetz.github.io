@@ -1,0 +1,20 @@
+{%- comment -%}
+	The data-* attributes script.js reads (see the list at the top of script.js) for a window that has its own page,
+	taken from that page: its address, title and `app`, plus the `window` block in its front matter:
+	  icon, name   emoji and file / program name
+	  title        title bar text, if it differs from the name
+	  task_text    taskbar text, if it differs from the name
+	  menu         comma-separated menu bar items
+	  start        "menu" or "programs": list it in the Start menu
+	  style        its size and nudge as a floating window (--w, --hh, --dx; see style.css)
+	The id is the page's `app`, or else comes from its address (/blog/hello/ is blog-hello).
+{%- endcomment -%}
+{%- assign p = include.page -%}
+{%- assign w = p.window -%}
+{%- assign id = p.app -%}
+{%- if id == nil %}{% assign id = p.url | slugify %}{% endif -%}
+style="{{ w.style }}" data-win="{{ id }}" data-url="{{ p.url }}" data-page-title="{{ p.title }}" data-icon="{{ w.icon }}" data-name="{{ w.name }}"
+{%- if w.title %} data-title="{{ w.title }}"{% endif %}
+{%- if w.task_text %} data-task-text="{{ w.task_text }}"{% endif %}
+{%- if w.menu %} data-menu="{{ w.menu }}"{% endif %}
+{%- if w.start %} data-start="{{ w.start }}"{% endif -%}
