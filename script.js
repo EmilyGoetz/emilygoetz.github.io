@@ -6,6 +6,7 @@
 	     data-url        gives it its own address (/paint/): the address bar follows whichever window is on top, and that
 	                     page opens with the window already in front
 	     data-src        a document window that's empty here: its text is loaded from this page the first time it opens
+	     data-landing    the window this page is for (Paint on /paint/): centered on the desktop until it's closed
 	     data-page-title browser tab title (Emily Goetz | ...) while it's on top, if it differs from the name
 	     data-icon       emoji shown in its title bar, taskbar button, Start entry and My Computer entry
 	     data-name       file / program name (same places, plus the button labels)
@@ -123,7 +124,7 @@
 		if (gone(w) || w.dataset.busy) return;
 		function finish() {
 			w.classList.add('is-gone');
-			if (kind === 'close') { w.style.removeProperty('--sy'); w.style.removeProperty('--vp'); }
+			if (kind === 'close') { w.style.removeProperty('--sy'); w.style.removeProperty('--vp'); delete w.dataset.landing; }
 			delete w.dataset.busy;
 			if (active === w) { var n = topVisible(); if (n) raise(n); else setActive(null); }
 		}
@@ -554,6 +555,517 @@
 		input.addEventListener('input', render);
 		input.closest('.win').addEventListener('coldopen', function () { input.value = ''; out.scrollTop = 0; render(); }); /* reopened after closing: start over */
 		render();
+	})();
+
+	/* cat.exe */
+	(function () {
+		var win = wins.cat;
+		if (!win) return;
+		/* 22 × 14 pixel frames, facing right, feet on the bottom row. Each letter is a part of the cat, colored by its coat:
+		   o outline, f fur, s stripes, m muzzle and chest, n nose and inner ears, e eyes (l shut), p paws, a and b patches */
+		var FRAMES = {
+			walk1: [
+				'............o......o..',
+				'.o.........ono....ono.',
+				'obo........onnoooonno.',
+				'oso........oaafffbbbo.',
+				'obo........oaeaffbebo.',
+				'ofo........oafmnnmfbo.',
+				'.ofoooooooooffmmmmffo.',
+				'..obbssaassfoooooooo..',
+				'..obbfaaaffffmmmmo....',
+				'..obfffaaffffmmmo.....',
+				'..offfffffffffffo.....',
+				'...offoffooffoffo.....',
+				'...oppoppooppoppo.....',
+				'...oooooooooooooo.....'
+			],
+			walk2: [
+				'............o......o..',
+				'oo.........ono....ono.',
+				'obo........onnoooonno.',
+				'.oso.......oaafffbbbo.',
+				'.obo.......oaeaffbebo.',
+				'.ofo.......oafmnnmfbo.',
+				'.ofoooooooooffmmmmffo.',
+				'..obbssaassfoooooooo..',
+				'..obbfaaaffffmmmmo....',
+				'..obfffaaffffmmmo.....',
+				'..offfffffffffffo.....',
+				'...oopoffooopoffo.....',
+				'....oooppo.oooppo.....',
+				'......oooo...oooo.....'
+			],
+			walk3: [
+				'............o......o..',
+				'.o.........ono....ono.',
+				'obo........onnoooonno.',
+				'oso........oaafffbbbo.',
+				'obo........oaeaffbebo.',
+				'ofo........oafmnnmfbo.',
+				'.ofoooooooooffmmmmffo.',
+				'..obbssaassfoooooooo..',
+				'..obbfaaaffffmmmmo....',
+				'..obfffaaffffmmmo.....',
+				'..offfffffffffffo.....',
+				'...offoffooffoffo.....',
+				'...oppoppooppoppo.....',
+				'...oooooooooooooo.....'
+			],
+			walk4: [
+				'............o......o..',
+				'oo.........ono....ono.',
+				'obo........onnoooonno.',
+				'.oso.......oaafffbbbo.',
+				'.obo.......oaeaffbebo.',
+				'.ofo.......oafmnnmfbo.',
+				'.ofoooooooooffmmmmffo.',
+				'..obbssaassfoooooooo..',
+				'..obbfaaaffffmmmmo....',
+				'..obfffaaffffmmmo.....',
+				'..offfffffffffffo.....',
+				'...offooppoffoppo.....',
+				'...oppoooooppoooo.....',
+				'...oooo...oooo........'
+			],
+			sit: [
+				'.........o......o.....',
+				'........ono....ono....',
+				'........onnoooonno....',
+				'........oaafffbbbo....',
+				'........oaeaffbebo....',
+				'........oafmnnmfbo....',
+				'........offmmmmffo....',
+				'........ooooooooo.....',
+				'.......obssaafmmo.....',
+				'......obbsaaffmmfo....',
+				'......obbfaaffffo.....',
+				'..ooooobffffffffo.....',
+				'..ossbofffppooppo.....',
+				'...ooooooooooooo......'
+			],
+			blink: [
+				'.........o......o.....',
+				'........ono....ono....',
+				'........onnoooonno....',
+				'........oaafffbbbo....',
+				'........oallffllbo....',
+				'........oafmnnmfbo....',
+				'........offmmmmffo....',
+				'........ooooooooo.....',
+				'.......obssaafmmo.....',
+				'......obbsaaffmmfo....',
+				'......obbfaaffffo.....',
+				'..ooooobffffffffo.....',
+				'..ossbofffppooppo.....',
+				'...ooooooooooooo......'
+			],
+			groom: [
+				'.........o......o.....',
+				'........ono....ono....',
+				'........onnoooonno....',
+				'........oaafffbbbo....',
+				'........oallffllbo....',
+				'........oafmnoofbo....',
+				'........offmoppofo....',
+				'........oooooffoo.....',
+				'.......obssaoffoo.....',
+				'......obbsaafffffo....',
+				'......obbfaaffffo.....',
+				'..ooooobfffffffo......',
+				'..ossbofffppoooo......',
+				'...ooooooooo..........'
+			],
+			sleep: [
+				'......................',
+				'......................',
+				'......................',
+				'......................',
+				'......................',
+				'............o......o..',
+				'...........ono....ono.',
+				'...........onnoooonno.',
+				'...oooooooooaafffbbbo.',
+				'..obbssaassoallffllbo.',
+				'oobbbaaaaffoafmnnmfbo.',
+				'oboooooofffoffmmmmffo.',
+				'obbssfffoooooooooooo..',
+				'.oooooooo.............'
+			],
+			fall: [
+				'............o......o..',
+				'...........ono....ono.',
+				'oo.........onnoooonno.',
+				'obo........oaafffbbbo.',
+				'.oso.......oaeaffbebo.',
+				'.oboooooooooafmnnmfbo.',
+				'..obbssaassoffmmmmffo.',
+				'..obbfaaafffoooooooo..',
+				'..obfffaaffffmmmo.....',
+				'.offofffffffffoffo....',
+				'.ooppooffooffooppo....',
+				'..oooooppooppooooo....',
+				'......oooooooo........',
+				'......................'
+			],
+			held: [
+				'.......o......o.......',
+				'......ono....ono......',
+				'......onnoooonno......',
+				'......oaafffbbbo......',
+				'......oaeaffbebo......',
+				'......oafmnnmfbo......',
+				'......offmmmmffo......',
+				'.......ooooooooo......',
+				'...oo..obbfaamfo......',
+				'...obo.obffffmfo......',
+				'....osoofffffffo......',
+				'.....oboofo.ofo.......',
+				'......ooopo.opo.......',
+				'........ooo.ooo.......'
+			]
+		};
+		/* the coats to pick from in Cat.exe (swatch: how its button looks). Eyes, paws and patches are drawn in the outline
+		   and fur colors (LIKE) unless a coat gives them their own. */
+		var COATS = [
+			{ id: 'orange', name: 'Orange tabby', swatch: 'linear-gradient(135deg, #f5a25d 50%, #d9622b 50%)',
+				colors: { o: '#3a2f4a', f: '#f5a25d', s: '#d9622b', m: '#fff3d6', n: '#ff8fc8' } },
+			{ id: 'black', name: 'Black cat with white socks', swatch: 'linear-gradient(135deg, #2e2836 60%, #f6f2f8 60%)',
+				colors: { o: '#15111b', f: '#2e2836', s: '#2e2836', m: '#453d50', n: '#e58bb6', e: '#f2d45c', l: '#6b6179', p: '#f6f2f8' } },
+			{ id: 'calico', name: 'Calico', swatch: 'linear-gradient(135deg, #fffaf2 33%, #f5a25d 33% 66%, #3b3340 66%)',
+				colors: { o: '#3a2f4a', f: '#fffaf2', s: '#f5a25d', m: '#fffaf2', n: '#ff8fc8', a: '#f5a25d', b: '#3b3340' } },
+			{ id: 'grey', name: 'Grey tabby', swatch: 'linear-gradient(135deg, #a9a6b8 50%, #6f6a82 50%)',
+				colors: { o: '#3a2f4a', f: '#a9a6b8', s: '#6f6a82', m: '#eceaf2', n: '#ff8fc8' } }
+		];
+		var LIKE = { e: 'o', l: 'o', p: 'f', a: 'f', b: 'f' };
+		/* frames drawn a pixel lower than they stand: asleep, the body lies flat on the ledge and the tail hangs over it */
+		var SINK = { sleep: 1 };
+		var FW = 22, FH = 14, art = {};
+		function dress(coat) { /* draws every frame in this coat */
+			Object.keys(FRAMES).forEach(function (n) {
+				var c = art[n] || make('canvas', { width: FW, height: FH }), g = c.getContext('2d');
+				g.clearRect(0, 0, FW, FH);
+				FRAMES[n].forEach(function (row, y) {
+					for (var x = 0; x < row.length; x++) {
+						var col = coat.colors[row[x]] || coat.colors[LIKE[row[x]]];
+						if (col) { g.fillStyle = col; g.fillRect(x, y, 1, 1); }
+					}
+				});
+				art[n] = c;
+			});
+		}
+
+		var cat = make('canvas', { 'class': 'cat', width: FW, height: FH, 'aria-hidden': 'true' });
+		cat.hidden = true;
+		document.body.appendChild(cat);
+		var pic = document.getElementById('catPic'), says = document.getElementById('catSays'), status = document.getElementById('catStatus');
+		var homeBtn = document.getElementById('catHome');
+		var g = cat.getContext('2d'), pg = pic.getContext('2d');
+
+		/* where it is: x is the middle of its feet and y the line they stand on, both in screen pixels. While it stands on
+		   something, `on` is that window (or the taskbar) and ox its distance from that window's left edge, so it moves
+		   with the window. */
+		var here = false, pending = false, raf = 0, last = 0, t = 0;
+		var x = 0, y = 0, vx = 0, vy = 0, dir = 1, on = null, ox = 0, hop = null;
+		var mode = 'sit', until = 0, shown = '', S = 0, spot = null; /* spot: the stretch of ledge it's standing on */
+		var LABELS = { walk: 'Wandering', run: 'Zoomies!', sit: 'Sitting', groom: 'Grooming', sleep: 'Napping', jump: 'Jumping!', fall: 'Falling!', held: 'Being carried' };
+
+		/* Everything it can stand on: the taskbar, and the top edge of every open window between the top of the screen and
+		   the taskbar, minus the stretches another window in front covers */
+		function above(a, b) { /* is window a in front of window b? */
+			var za = +a.style.zIndex || 0, zb = +b.style.zIndex || 0;
+			return za > zb || (za === zb && !!(b.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING));
+		}
+		function cut(segs, a, b) {
+			var out = [];
+			segs.forEach(function (s) {
+				if (s[0] < a) out.push([s[0], Math.min(s[1], a)]);
+				if (s[1] > b) out.push([Math.max(s[0], b), s[1]]);
+			});
+			return out.filter(function (s) { return s[1] - s[0] > 2; });
+		}
+		function ledges() {
+			var floor = taskbar.getBoundingClientRect().top, list = [{ el: taskbar, left: 0, y: floor, segs: [[0, window.innerWidth]] }];
+			var open = ids.map(function (id) { return wins[id]; }).filter(function (w) { return !gone(w) && !w.dataset.busy; });
+			open.forEach(function (w) {
+				var r = w.getBoundingClientRect();
+				if (r.top < 0 || r.top >= floor) return;
+				var segs = [[Math.max(r.left, 0), Math.min(r.right, window.innerWidth)]];
+				open.forEach(function (o) {
+					if (o === w || !above(o, w)) return;
+					var q = o.getBoundingClientRect();
+					if (q.top < r.top && q.bottom > r.top) segs = cut(segs, q.left, q.right);
+				});
+				if (segs.length) list.push({ el: w, left: r.left, y: r.top, segs: segs });
+			});
+			return list;
+		}
+		function segAt(l, px) {
+			for (var i = 0; i < l.segs.length; i++) if (px >= l.segs[i][0] && px <= l.segs[i][1]) return l.segs[i];
+			return null;
+		}
+
+		function rnd(a, b) { return a + Math.random() * (b - a); }
+		function set(m, secs) {
+			mode = m; until = t + (secs || 0);
+			status.textContent = LABELS[m];
+			cat.classList.toggle('held', m === 'held');
+		}
+		function moving() { return mode === 'walk' || mode === 'run'; }
+		/* What to do once the current thing is done: a weighted pick, with whatever it did in its last two turns made less
+		   likely, so it doesn't fall into a rut. With reduced motion it mostly sits and naps, and never runs. */
+		var recent = [];
+		function next() {
+			var odds = moving() ? { walk: 4, sit: 3, groom: .6, run: .5, jump: 2 }
+				: mode === 'sit' ? { walk: 6, run: .8, groom: 1, sleep: 1.5, sit: .8, jump: 2 }
+				: { walk: 4, sit: 2, groom: mode === 'groom' ? 0 : .5, jump: 1 }; /* after grooming, a nap or a landing */
+			var hops = targets();
+			if (!hops.length) odds.jump = 0;
+			if (reduce) { odds.run = odds.jump = 0; odds.walk /= 4; if (odds.sleep) odds.sleep *= 3; }
+			var total = 0, pick = 'sit';
+			Object.keys(odds).forEach(function (m) { if (recent.indexOf(m) >= 0) odds[m] *= m === 'walk' ? .7 : .35; total += odds[m]; });
+			var r = Math.random() * total;
+			Object.keys(odds).some(function (m) { pick = m; return (r -= odds[m]) <= 0; });
+			recent = [pick].concat(recent).slice(0, 2);
+			if (pick === 'jump') return leap(hops[Math.floor(Math.random() * hops.length)]);
+			if (pick === 'walk' || pick === 'run') { dir = heading(); hop = null; }
+			set(pick, { walk: rnd(3, 12), run: rnd(1, 2.5), sit: rnd(2, 5), groom: rnd(1.5, 3), sleep: rnd(20, 45) }[pick]);
+		}
+		/* which way to set off: more likely toward whichever side has more room, so it doesn't keep bumping into one edge */
+		function heading() {
+			if (!spot) return Math.random() < .5 ? 1 : -1;
+			var half = FW * S * .3, left = Math.max(x - spot[0] - half, 0) + 10, right = Math.max(spot[1] - half - x, 0) + 10;
+			return Math.random() * (left + right) < right ? 1 : -1;
+		}
+		function fall(speed) { on = null; spot = null; vx = speed || 0; vy = 0; set('fall'); }
+
+		/* Jumping: another window's top (or a stretch of one) it could leap to from here, up to about six times its height
+		   above it (as high as a real cat jumps; enough to get from the taskbar back onto the lowest windows), a bit more
+		   below, and about four lengths across (all scaled down on phones along with the cat) */
+		function targets() {
+			var k = S / 3, half = FW * S * .3, list = [];
+			ledges().forEach(function (l) {
+				var dy = l.y - y;
+				if (l.el === taskbar || l.el === on || dy < -260 * k || dy > 300 * k) return;
+				l.segs.forEach(function (sg) {
+					if (sg[1] - sg[0] < half * 2 + 4) return; /* too short to land on */
+					var tx = Math.min(Math.max(x, sg[0] + half), sg[1] - half);
+					if (Math.abs(tx - x) <= 240 * k) list.push({ el: l.el, x: tx, y: l.y, dir: tx === x ? dir : tx > x ? 1 : -1 });
+				});
+			});
+			return list;
+		}
+		/* a leap in an arc peaking a little above the higher end, timed to come down right on the spot. Until it gets there
+		   it only lands on the window it's aiming for (not back on the one it left, which the arc can pass through); if it
+		   misses (that window moved), it just falls. */
+		var aim = null;
+		function leap(to) {
+			var top = Math.min(y, to.y) - 34 * S / 3, up = Math.sqrt(2 * 2200 * (y - top)), down = Math.sqrt(2 * (to.y - top) / 2200);
+			on = null; spot = null; aim = to; vy = -up; vx = (to.x - x) / (up / 2200 + down);
+			if (Math.abs(vx) > 1) dir = vx > 0 ? 1 : -1;
+			set('jump');
+		}
+
+		/* Shaking the window it's on (dragging it back and forth) knocks it off: a few quick reversals of the window's
+		   smoothed speed within about a second, where an ordinary drag has one or two at most */
+		var shakeOn = null, wv = [0, 0], signs = [0, 0], flips = [], prevL = 0, prevY = 0;
+		function shaken(l, dt) {
+			if (on === taskbar || !on.classList.contains('dragging') || !dt) { shakeOn = null; return false; }
+			if (shakeOn !== on) { shakeOn = on; wv = [0, 0]; signs = [0, 0]; flips = []; prevL = l.left; prevY = l.y; }
+			var a = 1 - Math.pow(.0001, dt), fast = 300 * S / 3;
+			wv[0] += ((l.left - prevL) / dt - wv[0]) * a;
+			wv[1] += ((l.y - prevY) / dt - wv[1]) * a;
+			prevL = l.left; prevY = l.y;
+			[0, 1].forEach(function (i) {
+				var sign = Math.abs(wv[i]) > fast ? (wv[i] > 0 ? 1 : -1) : 0;
+				if (sign && signs[i] && sign !== signs[i]) flips.push(t);
+				if (sign) signs[i] = sign;
+			});
+			flips = flips.filter(function (f) { return t - f < 1.2; });
+			return flips.length >= 3;
+		}
+		function knockOff() {
+			var fling = Math.max(-600, Math.min(600, wv[0] * .5));
+			shakeOn = null; fall(fling); vy = -300;
+			status.textContent = 'Whoa!';
+		}
+		function land(l) { on = l.el; ox = x - l.left; y = l.y; vx = vy = 0; hop = null; set('sit', rnd(.8, 2)); }
+
+		function frame() {
+			if (moving()) return 'walk' + (1 + Math.floor(t * (mode === 'run' ? 22 : 7)) % 4);
+			if (mode === 'sit') return t % 3.5 < .15 ? 'blink' : 'sit';
+			if (mode === 'groom') return Math.floor(t * 3) % 2 ? 'groom' : 'blink';
+			if (mode === 'jump') return 'fall'; /* legs out */
+			return mode; /* sleep, fall, held */
+		}
+		function draw() {
+			var s = mq.matches ? 2 : 3, w = FW * s, h = FH * s, name = frame();
+			if (s !== S) { S = s; cat.style.width = w + 'px'; cat.style.height = h + 'px'; }
+			if (name !== shown) {
+				shown = name;
+				g.clearRect(0, 0, FW, FH); g.drawImage(art[name], 0, 0);
+				pg.clearRect(0, 0, FW, FH); pg.drawImage(art[name], 0, 0);
+			}
+			cat.style.transform = 'translate(' + Math.round(x - w / 2) + 'px, ' + Math.round(y - h + (SINK[name] || 0) * s) + 'px) scaleX(' + dir + ')';
+		}
+
+		function tick(now) {
+			raf = requestAnimationFrame(tick);
+			var dt = Math.min((now - last) / 1000 || 0, .05); /* a long pause (a background tab) doesn't turn into a leap */
+			last = now; t += dt;
+			var s = mq.matches ? 2 : 3, half = FW * s * .3, speed = 12 * s * (reduce ? .5 : 1);
+			if (pending) { /* dropped in from above Cat.exe once its window has finished opening */
+				if (gone(win) || win.dataset.busy) return;
+				var r = win.getBoundingClientRect();
+				pending = false; x = r.left + r.width / 2; y = Math.max(r.top - 160, -FH * s); fall();
+				cat.hidden = false;
+			}
+			if (mode === 'fall' || mode === 'jump') {
+				vy += 2200 * dt;
+				if (mode === 'fall') vx *= Math.pow(.3, dt); /* a jump keeps its aim */
+				x += vx * dt;
+				if (x < half || x > window.innerWidth - half) { x = Math.min(Math.max(x, half), window.innerWidth - half); vx = -vx * .5; }
+				var ny = y + vy * dt, landing = null;
+				if (mode === 'jump' && vy > 0 && y > aim.y + 8) set('fall'); /* went past it */
+				if (vy > 0) ledges().forEach(function (l) {
+					if (mode === 'jump' && l.el !== aim.el) return;
+					if (l.y >= y - 1 && l.y <= ny && segAt(l, x) && (!landing || l.y < landing.y)) landing = l;
+				});
+				if (landing) land(landing); else y = ny;
+			} else if (mode !== 'held') {
+				var l = null;
+				ledges().forEach(function (c) { if (c.el === on) l = c; });
+				x = l ? l.left + ox : x;
+				var seg = l && segAt(l, x);
+				var pace = speed * (mode === 'run' ? 5 : 1); /* zoomies: silly fast */
+				if (l && shaken(l, dt)) knockOff();
+				else if (!seg) fall(moving() ? dir * pace : 0); /* its window went away, moved, or got covered */
+				else {
+					y = l.y; spot = seg;
+					if (moving()) {
+						/* is there open screen past this end of the ledge to hop down into? (not where it runs off the screen) */
+						var room = function (d) { return on !== taskbar && (d > 0 ? seg[1] < window.innerWidth - half : seg[0] > half); };
+						if (seg[1] - seg[0] < half * 2 + 4) { /* too short to walk along: hop off whichever end has room, or stay put */
+							if (hop === null) { if (!room(dir) && room(-dir)) dir = -dir; hop = room(dir); }
+							if (hop) x += dir * pace * dt; else set('sit', rnd(2, 4));
+						} else {
+							x += dir * pace * dt;
+							/* at the end of a ledge: often leap to another window ahead if there's one in reach, otherwise turn
+							   around, or (with room past the end) sometimes hop down */
+							if ((dir > 0 && x > seg[1] - half) || (dir < 0 && x < seg[0] + half)) {
+								if (hop === null) {
+									var ahead = reduce ? [] : targets().filter(function (tg) { return tg.dir === dir; });
+									if (ahead.length && Math.random() < .5) leap(ahead[Math.floor(Math.random() * ahead.length)]);
+									else hop = room(dir) && Math.random() < .3;
+								}
+								if (mode === 'jump') { /* off it goes */ }
+								else if (!hop) { /* turned around: keep going a while, so it actually heads somewhere */
+									dir = -dir; hop = null; x = Math.min(Math.max(x, seg[0] + half), seg[1] - half);
+									until = Math.max(until, t + rnd(1.5, 3));
+								}
+							}
+						}
+					}
+					ox = x - l.left;
+				}
+			}
+			if (mode !== 'fall' && mode !== 'jump' && mode !== 'held' && t > until) next();
+			draw();
+		}
+
+		function start() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } }
+		function call() {
+			pending = true; here = true;
+			cat.classList.remove('leaving'); cat.hidden = true; /* until it's dropped in */
+			says.textContent = 'Your cat is out on the desktop. Drag it around, or give it a pat.';
+			homeBtn.disabled = false;
+			start();
+		}
+		function home() {
+			if (!here) return;
+			here = false; pending = false;
+			cancelAnimationFrame(raf); raf = 0;
+			cat.classList.add('leaving'); /* fades out where it is */
+			setTimeout(function () {
+				if (here) return; /* called back in the meantime */
+				cat.hidden = true;
+				pg.clearRect(0, 0, FW, FH); shown = '';
+			}, 300);
+			says.textContent = 'Your cat went home for a nap.';
+			status.textContent = 'Out';
+			homeBtn.disabled = true;
+		}
+		function hearts() {
+			if (reduce) return;
+			var h = make('span', { 'class': 'cat-heart', text: '♡' });
+			/* from somewhere around its head, so a few pats in a row don't all rise from the same spot */
+			h.style.left = x - 6 + rnd(-4, 4) * S + 'px'; h.style.top = y - FH * S - 8 + rnd(-1, 1) * S + 'px';
+			document.body.appendChild(h);
+			setTimeout(function () { h.remove(); }, 1000);
+		}
+
+		/* picking it up: a press that doesn't move is a pat (wakes it, or earns a heart), one that moves carries it by the
+		   scruff, and letting go drops it (thrown, if the pointer was moving) */
+		var grab = null;
+		cat.addEventListener('pointerdown', function (e) {
+			if (e.button !== 0 || !here) return;
+			e.preventDefault();
+			cat.setPointerCapture(e.pointerId);
+			grab = { id: e.pointerId, sx: e.clientX, sy: e.clientY, px: e.clientX, py: e.clientY, pt: e.timeStamp, vx: 0, vy: 0, moved: false };
+		});
+		cat.addEventListener('pointermove', function (e) {
+			if (!grab || e.pointerId !== grab.id) return;
+			if (!grab.moved) {
+				if (Math.abs(e.clientX - grab.sx) + Math.abs(e.clientY - grab.sy) < 6) return;
+				grab.moved = true; on = null; set('held'); buzz();
+			}
+			var dtp = Math.max(e.timeStamp - grab.pt, 8) / 1000;
+			grab.vx = (e.clientX - grab.px) / dtp; grab.vy = (e.clientY - grab.py) / dtp;
+			grab.px = e.clientX; grab.py = e.clientY; grab.pt = e.timeStamp;
+			x = e.clientX; y = e.clientY + FH * S - S; /* held by the scruff, just under the pointer */
+		});
+		function letGo(e) {
+			if (!grab || e.pointerId !== grab.id) return;
+			var g0 = grab; grab = null;
+			if (!g0.moved) { /* a pat */
+				if (mode === 'sleep') set('sit', rnd(2, 4));
+				else { hearts(); if (moving()) set('sit', rnd(2, 4)); }
+				buzz();
+				return;
+			}
+			var floor = taskbar.getBoundingClientRect().top, still = e.timeStamp - g0.pt > 80; /* held still before letting go: just dropped */
+			if (y > floor) y = floor; /* let go over the taskbar: it lands right there */
+			fall(still ? 0 : Math.max(-900, Math.min(900, g0.vx * .6)));
+			vy = still ? 0 : Math.max(-700, Math.min(500, g0.vy * .5));
+		}
+		cat.addEventListener('pointerup', letGo);
+		cat.addEventListener('pointercancel', letGo);
+		cat.addEventListener('lostpointercapture', letGo);
+
+		win.addEventListener('coldopen', function () { if (!here) call(); }); /* opening Cat.exe calls the cat */
+		document.getElementById('catCall').addEventListener('click', function () { buzz(); call(); });
+		homeBtn.addEventListener('click', function () { buzz(); home(); });
+		document.getElementById('shutdown').addEventListener('click', home);
+		/* the coat picker (remembered in this browser for next time) */
+		var coat = COATS[0], coatBtns = [];
+		try { coat = COATS.filter(function (c) { return c.id === localStorage.getItem('catCoat'); })[0] || coat; } catch (e) {}
+		function mark() { coatBtns.forEach(function (b, i) { b.classList.toggle('on', COATS[i] === coat); b.setAttribute('aria-pressed', COATS[i] === coat); }); }
+		function wear(c) {
+			coat = c; dress(c); shown = ''; mark();
+			if (here) draw(); else { pg.clearRect(0, 0, FW, FH); pg.drawImage(art.sit, 0, 0); } /* at home: show it off in the picture */
+			try { localStorage.setItem('catCoat', c.id); } catch (e) {}
+		}
+		COATS.forEach(function (c) {
+			var b = make('button', { 'class': 'sw', type: 'button', title: c.name, 'aria-label': c.name });
+			b.style.background = c.swatch;
+			b.addEventListener('click', function () { buzz(); if (c !== coat) wear(c); });
+			document.getElementById('catCoats').appendChild(b);
+			coatBtns.push(b);
+		});
+		dress(coat); mark();
+		says.textContent = 'Your cat is at home.';
+		homeBtn.disabled = true;
+		if (!gone(win)) call(); /* this is Cat.exe's own page (/cat/), which opened the window before this could hear it */
 	})();
 
 	/* taskbar buttons show their names while there's room for all of them, and fall back to just their icons when there isn't

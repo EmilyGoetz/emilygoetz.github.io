@@ -35,7 +35,8 @@
 	--win-min-h: 170px; /* the least a window that scrolls or shrinks to fit is squeezed to: ~4 lines of text, a 100px photo */
 	/* window z-indexes count up from script.js; these stay above all of them */
 	--z-taskbar: 100000;
-	--z-spark: 100001;
+	--z-cat: 100001; /* the cat walks along the taskbar, so it's above it too */
+	--z-spark: 100002;
 	--vh: 1vh;
 }
 /* on phones vh includes the area behind the browser's toolbar, dvh doesn't */
@@ -265,6 +266,10 @@ details.start { flex: none; }
 /* a window that can be taller than the screen scrolls its content instead */
 .win.popup.scroll { max-height: calc(var(--vp) - var(--ot) - var(--taskbar-h) - 22px); min-height: var(--win-min-h); }
 .win.popup.scroll:not(.is-gone) { display: flex; flex-direction: column; }
+/* A window opened by its own address (/paint/) is alone on the desktop, so it sits right in the middle of the space
+   above the taskbar, going by its real size rather than --hh, and without the --dx nudge. script.js unmarks it when
+   it's closed, so reopening it later places it like any other. */
+.win.popup[data-landing] { --ot: 12px; top: 0; bottom: var(--taskbar-h); left: calc(50vw - var(--pw) / 2); height: fit-content; margin-block: auto; }
 .win.scroll .content { flex: 1; min-height: 0; overflow-y: auto; }
 
 /* ---------- Paint ---------- */
@@ -322,6 +327,24 @@ details.start { flex: none; }
 .file span { padding: 0 3px; }
 .file:focus-visible { outline: 0; }
 .file:focus-visible span, .file:active span { background: var(--purple); color: #fff; outline: 1px dotted #fff; }
+
+/* ---------- Cat.exe ---------- */
+.catexe .content { display: flex; gap: 12px; align-items: center; background: var(--face); box-shadow: none; }
+.catexe p { margin: 0; }
+/* the picture with the coat swatches under it, and beside them the message and buttons, each centered in its column */
+.cat-side { flex: none; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+/* as wide as the row of four 18px swatches under it (with their 6px gaps) */
+.cat-pic { display: flex; justify-content: center; width: calc(4 * 18px + 3 * 6px); padding: 6px; background: #fff; box-shadow: var(--bevel-well); line-height: 0; }
+.cat-pic canvas { width: 66px; height: 42px; image-rendering: pixelated; }
+.cat-coats { display: flex; gap: 6px; }
+.cat-main { flex: 1; text-align: center; }
+.cat-main .dlg-btns { justify-content: center; }
+/* the cat: script.js places it with transform (and flips it to face the way it's walking) */
+.cat { position: fixed; left: 0; top: 0; z-index: var(--z-cat); image-rendering: pixelated; cursor: grab; touch-action: none; transition: opacity .3s; }
+.cat.held { cursor: grabbing; }
+.cat.leaving { opacity: 0; pointer-events: none; }
+.cat-heart { position: fixed; z-index: var(--z-spark); pointer-events: none; color: #e0559f; font-size: 14px; animation: rise 1s ease-out forwards; }
+@keyframes rise { to { transform: translateY(-30px); opacity: 0; } }
 
 /* ---------- sparkle cursor trail ---------- */
 .spark { position: fixed; z-index: var(--z-spark); pointer-events: none; font-size: 16px; animation: fall .8s ease-out forwards; }

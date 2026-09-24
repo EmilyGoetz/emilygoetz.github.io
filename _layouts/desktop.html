@@ -157,6 +157,22 @@
 			<div class="status"><span id="ctCount">&nbsp;</span><span>Click a style to copy it</span></div>
 		</section>
 
+		<!-- Cat.exe (the cat itself is drawn by script.js) -->
+		{%- assign program = site.pages | where: "app", "cat" | first %}
+		<section class="win catexe popup is-gone" {% include window-attrs.html page=program %}>
+			<div class="content">
+				<div class="cat-side">
+					<div class="cat-pic"><canvas id="catPic" width="22" height="14" role="img" aria-label="Your cat"></canvas></div>
+					<div class="cat-coats" id="catCoats" role="group" aria-label="Coat"></div>
+				</div>
+				<div class="cat-main">
+					<p id="catSays">&nbsp;</p>
+					<div class="dlg-btns"><button type="button" id="catCall">Call cat</button><button type="button" id="catHome">Send home</button></div>
+				</div>
+			</div>
+			<div class="status"><span id="catStatus">&nbsp;</span><span>Cat.exe</span></div>
+		</section>
+
 		<!-- My Computer -->
 		<section class="win explorer popup is-gone" style="--w: 380px; --hh: 150px; --dx: -70px" data-win="computer" data-icon="🖥️" data-name="My Computer" data-menu="File,Edit,View,Help">
 			<div class="content">

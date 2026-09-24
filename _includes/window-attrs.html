@@ -7,7 +7,8 @@
 	  menu         comma-separated menu bar items
 	  start        "menu" or "programs": list it in the Start menu
 	  style        its size and nudge as a floating window (--w, --hh, --dx; see style.css)
-	The id is the page's `app`, or else comes from its address (/blog/hello/ is blog-hello).
+	The id is the page's `app`, or else comes from its address (/blog/hello/ is blog-hello). On that page itself the
+	window is marked data-landing, which style.css uses to center it.
 {%- endcomment -%}
 {%- assign p = include.page -%}
 {%- assign w = p.window -%}
@@ -17,4 +18,5 @@ style="{{ w.style }}" data-win="{{ id }}" data-url="{{ p.url }}" data-page-title
 {%- if w.title %} data-title="{{ w.title }}"{% endif %}
 {%- if w.task_text %} data-task-text="{{ w.task_text }}"{% endif %}
 {%- if w.menu %} data-menu="{{ w.menu }}"{% endif %}
-{%- if w.start %} data-start="{{ w.start }}"{% endif -%}
+{%- if w.start %} data-start="{{ w.start }}"{% endif %}
+{%- if p.url == page.url %} data-landing{% endif -%}
