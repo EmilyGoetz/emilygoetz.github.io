@@ -231,11 +231,61 @@
 			else { raise(w); reveal(w, true); bump(w); }
 		});
 	});
+	/* a link to a window's own address (/cool-text/, say, from a document's text) opens that window here instead of loading
+	   its page. A click meant for a new tab or window still goes the browser's way. */
+	document.addEventListener('click', function (e) {
+		var a = e.target.closest && e.target.closest('a[href]');
+		if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || (a.target && a.target !== '_self')) return;
+		var url = new URL(a.href, location.href);
+		if (url.origin !== location.origin) return;
+		var id = ids.filter(function (i) { return wins[i].dataset.url === url.pathname; })[0];
+		if (!id) return;
+		e.preventDefault();
+		buzz();
+		show(id);
+	});
+
+	var shutDown = false; /* from the click on Shut Down until the screen is back on */
 	document.getElementById('shutdown').addEventListener('click', function () {
+		if (shutDown) return;
+		shutDown = true;
 		buzz();
 		start.open = false;
-		ids.forEach(function (id, i) { setTimeout(function () { hide(id, 'close'); }, reduce ? 0 : i * 120); });
+		/* the open windows close one after another (the closed ones just lose their taskbar buttons, straight away) */
+		var open = ids.filter(function (id) { return !gone(wins[id]); });
+		ids.forEach(function (id) { if (open.indexOf(id) < 0) hide(id, 'close'); });
+		open.forEach(function (id, i) { setTimeout(function () { hide(id, 'close'); }, reduce ? 0 : i * 120); });
+		/* once the last window has gone, the screen itself switches off, and any click turns it back on at the home page */
+		setTimeout(powerOff, reduce ? 0 : Math.max(open.length - 1, 0) * 120 + 360 + 120);
 	});
+	function powerOff() {
+		/* one still switching on (if Shut Down came again that quickly) gives way to the new one */
+		document.querySelectorAll('.power-off').forEach(function (o) { o.remove(); });
+		var again = make('button', { type: 'button', 'class': 'restart', text: '[Click anywhere to restart]' });
+		var off = make('div', { 'class': 'power-off' }, [make('div', { 'class': 'crt', 'aria-hidden': 'true' }), again]);
+		off.addEventListener('click', function () { buzz(); powerOn(off); });
+		/* everything under the black screen is out of reach too, for the keyboard and screen readers as well as the mouse */
+		Array.from(document.body.children).forEach(function (el) { el.inert = true; });
+		document.body.appendChild(off);
+		again.focus({ preventScroll: true });
+	}
+	/* back to the home page as it loads: its own windows (the ones not written as popups) open, About Me on top, and the
+	   screen switches on around them */
+	function powerOn(off) {
+		if (off.classList.contains('on')) return;
+		Array.from(document.body.children).forEach(function (el) { el.inert = false; });
+		shutDown = false;
+		var home = ids.filter(function (id) { return !wins[id].classList.contains('popup'); });
+		home.forEach(function (id) { show(id, true); });
+		raise(wins[home[0]]);
+		window.scrollTo(0, 0);
+		/* the restart button is about to go, so focus lands on the top window's taskbar button rather than back at the start
+		   of the page */
+		tasks[home[0]].focus({ preventScroll: true });
+		if (reduce) { off.remove(); return; }
+		off.classList.add('on');
+		off.querySelector('.crt').addEventListener('animationend', function () { off.remove(); });
+	}
 
 	/* start menu: close on outside click / Escape */
 	document.addEventListener('pointerdown', function (e) { if (!start.contains(e.target)) start.open = false; });
@@ -759,6 +809,16 @@
 		cat.hidden = true;
 		document.body.appendChild(cat);
 		var pic = document.getElementById('catPic'), says = document.getElementById('catSays'), status = document.getElementById('catStatus');
+		/* shows one of the messages written out in the layout (data-say), hiding the rest, and has screen readers announce it
+		   (the live region starts out holding the first one, so the page loading doesn't announce anything) */
+		var saysLive = document.getElementById('catSaysLive');
+		function say(which) {
+			says.querySelectorAll('[data-say]').forEach(function (s) {
+				var on = s.dataset.say === which;
+				s.classList.toggle('on', on);
+				if (on && saysLive.textContent !== s.textContent) saysLive.textContent = s.textContent;
+			});
+		}
 		var homeBtn = document.getElementById('catHome');
 		var g = cat.getContext('2d'), pg = pic.getContext('2d');
 
@@ -977,7 +1037,7 @@
 		function call() {
 			pending = true; here = true;
 			cat.classList.remove('leaving'); cat.hidden = true; /* until it's dropped in */
-			says.textContent = 'Your cat is out on the desktop. Drag it around, or give it a pat.';
+			say('out');
 			homeBtn.disabled = false;
 			start();
 		}
@@ -991,17 +1051,17 @@
 				cat.hidden = true;
 				pg.clearRect(0, 0, FW, FH); shown = '';
 			}, 300);
-			says.textContent = 'Your cat went home for a nap.';
+			say('nap');
 			status.textContent = 'Out';
 			homeBtn.disabled = true;
 		}
 		function hearts() {
 			if (reduce) return;
-			var h = make('span', { 'class': 'cat-heart', text: '♡' });
+			var h = make('span', { 'class': 'cat-heart', text: '\u2665\uFE0E' }); /* FE0E: the text heart, so it takes our pink rather than becoming a red emoji */
 			/* from somewhere around its head, so a few pats in a row don't all rise from the same spot */
 			h.style.left = x - 6 + rnd(-4, 4) * S + 'px'; h.style.top = y - FH * S - 8 + rnd(-1, 1) * S + 'px';
 			document.body.appendChild(h);
-			setTimeout(function () { h.remove(); }, 1000);
+			setTimeout(function () { h.remove(); }, 1200);
 		}
 
 		/* picking it up: a press that doesn't move is a pat (wakes it, or earns a heart), one that moves carries it by the
@@ -1063,7 +1123,6 @@
 			coatBtns.push(b);
 		});
 		dress(coat); mark();
-		says.textContent = 'Your cat is at home.';
 		homeBtn.disabled = true;
 		if (!gone(win)) call(); /* this is Cat.exe's own page (/cat/), which opened the window before this could hear it */
 	})();

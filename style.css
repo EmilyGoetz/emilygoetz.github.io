@@ -12,6 +12,7 @@
 	--face-d: #9a86b5;
 	--ink: #3a2f4a;
 	--pink: #ff8fc8;
+	--pink-d: #c73d86; /* --pink deepened enough to read as text on white */
 	--lav: #a98cf0;
 	--purple: #7b4fa3;
 	--desktop: #8fdccd;
@@ -37,6 +38,7 @@
 	--z-taskbar: 100000;
 	--z-cat: 100001; /* the cat walks along the taskbar, so it's above it too */
 	--z-spark: 100002;
+	--z-off: 100003; /* the switched-off screen covers everything */
 	--vh: 1vh;
 }
 /* on phones vh includes the area behind the browser's toolbar, dvh doesn't */
@@ -143,6 +145,9 @@ button.tb:focus-visible { outline: 1px dotted var(--ink); outline-offset: -3px; 
 .notepad p { margin: 0 0 8px; }
 .notepad .sub { padding-left: 18px; }
 .notepad .sub::before { content: "* "; }
+/* links in the text windows (About Me and the Markdown documents): bold deep pink, underlined only when pointed at */
+.notepad a, .notepad a:visited { color: var(--pink-d); font-weight: bold; text-decoration: none; }
+.notepad a:hover, .notepad a:focus-visible { text-decoration: underline; }
 
 .mail .hide { display: none; }
 
@@ -191,6 +196,41 @@ button.tb:focus-visible { outline: 1px dotted var(--ink); outline-offset: -3px; 
 .win.restoring  { animation: from-taskbar .45s cubic-bezier(.2, 1.25, .4, 1) both; }
 .win.bump       { animation: bump .28s ease-out; }
 
+/* Shut Down: the screen switches off like the windows do. .crt is a hole in a sea of black (its huge shadow) that the
+   real desktop shows through, so it's the desktop itself that squeezes to a bright line and then a dot */
+.power-off { position: fixed; inset: 0; z-index: var(--z-off); display: grid; place-items: center; cursor: pointer; overflow: hidden; }
+.power-off .crt {
+	grid-area: 1 / 1; width: 0; height: 0; box-shadow: 0 0 0 200vmax #000;
+	animation: screen-off .6s ease-in;
+}
+@keyframes screen-off {
+	0%   { width: 100%; height: 100%; background: rgba(255, 255, 255, 0); }
+	55%  { width: 100%; height: 2px; background: rgba(255, 255, 255, .9); }
+	85%  { width: 4%; height: 2px; background: #fff; }
+	100% { width: 0; height: 0; background: #fff; }
+}
+.power-off .restart {
+	grid-area: 1 / 1; padding: 6px 10px; border: 0; background: none; cursor: pointer;
+	font: 14px "Courier New", monospace; color: #d8cbe6;
+	animation: restart-in 1.4s ease-in-out 1s both;
+}
+.power-off .restart:focus-visible { outline: 1px dotted #d8cbe6; outline-offset: 2px; }
+@keyframes restart-in { from { opacity: 0; } }
+/* restarting: the same thing backwards, a dot that stretches to a bright line and opens out onto the desktop */
+.power-off.on { pointer-events: none; }
+.power-off.on .crt { animation: screen-on .7s ease-out both; }
+.power-off.on .restart { animation: restart-out .15s ease-out both; }
+@keyframes screen-on {
+	0%   { width: 0; height: 0; background: #fff; }
+	15%  { width: 4%; height: 2px; background: #fff; }
+	45%  { width: 100%; height: 2px; background: rgba(255, 255, 255, .9); }
+	100% { width: 100%; height: 100%; background: rgba(255, 255, 255, 0); }
+}
+@keyframes restart-out { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+	.power-off .crt, .power-off .restart { animation: none; }
+}
+
 /* ---------- taskbar + start menu ---------- */
 .taskbar {
 	position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-taskbar);
@@ -216,13 +256,16 @@ details.start li button {
 /* every icon gets the same width, so labels line up whatever the system's emoji happen to measure */
 details.start li button .ico { display: inline-block; min-width: 1.6em; }
 details.start li button svg { vertical-align: -2px; }
-details.start li button:hover, details.start li button:focus-visible { background: linear-gradient(90deg, var(--pink), var(--lav)); color: #fff; outline: 0; }
+details.start li button:hover, details.start li button:focus-visible,
+/* a row whose flyout is showing stays lit while the pointer is over the flyout */
+details.start li.has-sub:hover > button, details.start li.has-sub:focus-within > button, details.start li.has-sub.open > button { background: linear-gradient(90deg, var(--pink), var(--lav)); color: #fff; outline: 0; }
 details.start li.sep { height: 2px; margin: 3px 2px; box-shadow: inset 0 1px var(--face-d), inset 0 -1px #fff; }
 
 /* Programs flyout */
 details.start li.has-sub { position: relative; }
 details.start li.has-sub > button .arr { float: right; }
-details.start ul.sub { display: none; top: -3px; bottom: auto; left: 100%; margin: 0; min-width: 130px; white-space: nowrap; }
+/* anchored at the bottom so it grows upward from the Programs row, like the Start menu itself */
+details.start ul.sub { display: none; top: auto; bottom: -3px; left: 100%; margin: 0; min-width: 130px; white-space: nowrap; }
 details.start li.has-sub:hover > ul.sub,
 details.start li.has-sub:focus-within > ul.sub,
 details.start li.has-sub.open > ul.sub { display: block; }
@@ -339,12 +382,20 @@ details.start { flex: none; }
 .cat-coats { display: flex; gap: 6px; }
 .cat-main { flex: 1; text-align: center; }
 .cat-main .dlg-btns { justify-content: center; }
+.cat-says { display: grid; align-items: center; }
+.cat-says > span { grid-area: 1 / 1; }
+.cat-says > span:not(.on) { visibility: hidden; }
 /* the cat: script.js places it with transform (and flips it to face the way it's walking) */
 .cat { position: fixed; left: 0; top: 0; z-index: var(--z-cat); image-rendering: pixelated; cursor: grab; touch-action: none; transition: opacity .3s; }
 .cat.held { cursor: grabbing; }
 .cat.leaving { opacity: 0; pointer-events: none; }
-.cat-heart { position: fixed; z-index: var(--z-spark); pointer-events: none; color: #e0559f; font-size: 14px; animation: rise 1s ease-out forwards; }
-@keyframes rise { to { transform: translateY(-30px); opacity: 0; } }
+.cat-heart { position: fixed; z-index: var(--z-spark); pointer-events: none; color: #e0559f; font-size: 14px; line-height: 1; animation: rise 1.2s ease-out forwards; }
+@keyframes rise {
+	0%   { transform: translateY(0) scale(.8); opacity: .4; }
+	20%  { transform: translateY(-6px) scale(1.05); opacity: 1; }
+	60%  { opacity: 1; }
+	100% { transform: translateY(-32px) scale(1); opacity: 0; }
+}
 
 /* ---------- sparkle cursor trail ---------- */
 .spark { position: fixed; z-index: var(--z-spark); pointer-events: none; font-size: 16px; animation: fall .8s ease-out forwards; }

@@ -61,7 +61,7 @@
 						<p>👋 Hi!</p>
 						<p>My name is Emily.</p>
 						<p>I'm an Android engineer based in NYC.</p>
-						<p class="sub">Right now I'm a staff engineer &amp; tech lead at a dating app. 🫶</p>
+						<p class="sub">Right now I'm a staff engineer &amp; tech lead on the Growth team at a dating app. 🫶</p>
 						<p class="sub">I've previously worked at <a href="https://venmo.com/">Venmo</a> and Viacom (now <a href="https://www.paramount.com/">Paramount</a>).</p>
 						<p>I'm a percussionist in a local wind symphony too.</p>
 						<p class="sub">I've been playing percussion for over 20 years! 🥁</p>
@@ -166,7 +166,11 @@
 					<div class="cat-coats" id="catCoats" role="group" aria-label="Coat"></div>
 				</div>
 				<div class="cat-main">
-					<p id="catSays">&nbsp;</p>
+					<p class="cat-says" id="catSays" aria-hidden="true">
+						<span data-say="out" class="on">Your cat is out on the desktop. Drag it around, or give it a pat.</span>
+						<span data-say="nap">Your cat went home for a nap.</span>
+					</p>
+					<p class="sr-only" id="catSaysLive" role="status">Your cat is out on the desktop. Drag it around, or give it a pat.</p>
 					<div class="dlg-btns"><button type="button" id="catCall">Call cat</button><button type="button" id="catHome">Send home</button></div>
 				</div>
 			</div>
