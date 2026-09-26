@@ -15,7 +15,7 @@
 	<div class="titlebar">{{ w.icon }} {{ w.title | default: w.name }}
 		<span class="btns">
 			<button class="tb" type="button" data-min="{{ id }}" aria-label="Minimize {{ w.name }}">_</button>
-			<span class="tb" aria-hidden="true">□</span>
+			<button class="tb" type="button" data-max="{{ id }}" aria-label="Maximize {{ w.name }}">□</button>
 			<button class="tb" type="button" data-close="{{ id }}" aria-label="Close {{ w.name }}">×</button>
 		</span>
 	</div>

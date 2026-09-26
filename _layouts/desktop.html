@@ -62,7 +62,7 @@
 					<div class="titlebar">📝 About Me.txt - Notepad
 						<span class="btns">
 							<button class="tb" type="button" data-min="about" aria-label="Minimize About Me.txt">_</button>
-							<span class="tb" aria-hidden="true">□</span>
+							<button class="tb" type="button" data-max="about" aria-label="Maximize About Me.txt">□</button>
 							<button class="tb" type="button" data-close="about" aria-label="Close About Me.txt">×</button>
 						</span>
 					</div>
@@ -87,7 +87,7 @@
 					<div class="titlebar">🖼️ photo.jpg - Image Viewer
 						<span class="btns">
 							<button class="tb" type="button" data-min="photo" aria-label="Minimize photo.jpg">_</button>
-							<span class="tb" aria-hidden="true">□</span>
+							<button class="tb" type="button" data-max="photo" aria-label="Maximize photo.jpg">□</button>
 							<button class="tb" type="button" data-close="photo" aria-label="Close photo.jpg">×</button>
 						</span>
 					</div>
@@ -98,7 +98,6 @@
 				<section class="win contact{{ closed }}" data-win="contact" data-icon="📫" data-name="Contact.exe" data-file data-start="menu">
 					<div class="titlebar">📫 Contact.exe
 						<span class="btns">
-							<span class="tb" aria-hidden="true">?</span>
 							<button class="tb" type="button" data-close="contact" aria-label="Close Contact.exe">×</button>
 						</span>
 					</div>
@@ -169,7 +168,7 @@
 
 		<!-- Cat.exe (the cat itself is drawn by script.js) -->
 		{%- assign program = site.pages | where: "app", "cat" | first %}
-		<section class="win catexe popup is-gone" {% include window-attrs.html page=program %}>
+		<section class="win catexe popup is-gone" {% include window-attrs.html page=program %} data-nomax>
 			<div class="content">
 				<div class="cat-side">
 					<div class="cat-pic"><canvas id="catPic" width="22" height="14" role="img" aria-label="Your cat"></canvas></div>

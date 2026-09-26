@@ -128,6 +128,35 @@
 	--link-visited: #8e3a9e;
 	--start-ico: "🌙";
 }
+[data-theme="notebook"] {
+	--face: #f4f1e8;
+	--face-l: #fbfaf5;
+	--face-d: #a3a6b4;
+	--ink: #1f2a55; /* blue ballpoint */
+	--shadow: rgba(31, 42, 85, .25);
+	--title-a: #3050c8; /* blue ballpoint fading into a pink gel pen */
+	--title-b: #e0509a;
+	--accent: #c8323c; /* the red of the margin line */
+	--select: #b8307a;
+	--hint: #6b7090; /* --face-d is too faint to read on --paper here */
+	--desktop: #fdfcf7;
+	/* wide-ruled school paper: blue lines under a blank header, a double red margin line and three punched holes */
+	--wallpaper:
+		radial-gradient(circle at 14px 18%, #e6e3da 0 7px, #cdc8bb 8px, transparent 8.6px) no-repeat,
+		radial-gradient(circle at 14px 50%, #e6e3da 0 7px, #cdc8bb 8px, transparent 8.6px) no-repeat,
+		radial-gradient(circle at 14px 82%, #e6e3da 0 7px, #cdc8bb 8px, transparent 8.6px) no-repeat,
+		linear-gradient(90deg, transparent 104px, rgba(222, 90, 100, .55) 104px 105px, transparent 105px 107px, rgba(222, 90, 100, .55) 107px 108px, transparent 108px),
+		linear-gradient(var(--desktop), var(--desktop)) 0 0 / 100% 64px no-repeat,
+		repeating-linear-gradient(transparent 0 27px, rgba(110, 150, 210, .45) 27px 28px),
+		var(--desktop);
+	--mat: #e6e2d6;
+	--link: #2f4fa8;
+	--link-visited: #7a3f9e;
+	--start-ico: "📓";
+	/* white labels would vanish on the paper, so they're written in pen */
+	--icon-ink: var(--ink);
+	--icon-halo: 0 0 2px var(--desktop), 0 0 3px var(--desktop);
+}
 [data-theme="dark"] {
 	color-scheme: dark; /* scrollbars and text boxes follow */
 	--face: #2d2a35;
@@ -480,6 +509,31 @@ details.start { flex: none; }
 .win.popup[data-landing] { --ot: 12px; top: 0; bottom: var(--taskbar-h); left: calc(50vw - var(--pw) / 2); height: fit-content; margin-block: auto; }
 .win.scroll .content { flex: 1; min-height: 0; overflow-y: auto; }
 
+/* ---------- maximized windows ---------- */
+/* Filling the screen above the taskbar (so the cat can still walk along it), wherever the window was dragged to. The
+   popup selectors outrank the floating windows' own placement and height limits above. */
+.win.maxed, .win.popup.maxed, .win.popup.maxed[data-landing] {
+	position: fixed; inset: 0 0 var(--taskbar-h); width: auto; height: auto; max-height: none; margin: 0;
+	translate: none !important; /* over the inline one dragging leaves */
+	display: flex; flex-direction: column;
+	box-shadow: var(--bevel-win); /* no drop shadow: there's nothing under it to cast one on */
+}
+.win.maxed .titlebar { cursor: default; }
+.win.maxed > *, .windows .win.maxed > * { flex: none; }
+.win.maxed > .content, .windows .win.maxed > .content { flex: 1; min-height: 0; overflow-y: auto; }
+/* the stand-in a home-page window leaves in its column while it's maximized (script.js sizes it); on phones, where a
+   minimized window gives up its place, so does its stand-in */
+.win-ph { flex: none; }
+/* what's inside grows into the room: the photo as big as fits, Paint's canvas (script.js sizes it) and Cool Text's list */
+.photo.maxed .content { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.photo.maxed img { flex: 1 1 0; min-height: 0; width: 100%; max-width: none; aspect-ratio: auto; object-fit: contain; border: 0; }
+.paint.maxed .pnt-main { min-height: 0; }
+.paint.maxed .pnt-canvas canvas { max-width: none; max-height: none; }
+.ctg.maxed .ctg-out { flex: 1 1 auto; }
+/* nothing behind a maximized window can be seen, so the page behind it doesn't scroll (on phones, where it otherwise
+   would, the windows being stacked down the page); minimized, it lets go */
+html:has(.win.maxed:not(.is-gone)) { overflow: hidden; }
+
 /* ---------- Paint ---------- */
 .win.paint .content { display: flex; gap: 6px; padding: 6px; background: var(--face); box-shadow: none; }
 .pnt-tools { display: grid; grid-template-columns: repeat(2, 28px); gap: 2px; align-content: start; }
@@ -600,9 +654,30 @@ details.start { flex: none; }
 	.icon.deco { display: none; }
 	.windows { grid-template-columns: 1fr; gap: 20px; margin-left: 0; margin-block: 0; }
 	.win.is-gone { display: none; }
+	.win-ph:has(+ .win.is-gone) { display: none; }
 	.win.popup { left: calc(50vw - var(--pw) / 2); }
 	.col { gap: 20px; }
 	.col.r { padding-top: 0; }
+}
+
+/* ---------- touchscreens: bigger tap targets ---------- */
+@media (pointer: coarse) {
+	:root { --taskbar-h: 44px; } /* 30px line + the buttons' 3px padding + the taskbar's 4px */
+	.titlebar { padding: 4px 4px 4px 6px; }
+	.titlebar .btns { gap: 4px; }
+	.tb { width: 30px; height: 26px; font-size: 13px; line-height: 26px; }
+	button.tb:active { line-height: 28px; }
+	details.start summary, .task, .tray { line-height: 30px; }
+	details.start li button { padding: 11px 12px; font-size: 14px; }
+	details.themes summary { padding: 0 6px; font-size: 16px; }
+	.theme-opt { padding: 9px 10px 9px 6px; }
+	.dlg-btns button, .dlg-btns a { min-height: 36px; padding: 6px 14px; }
+	.pt { width: 36px; height: 36px; font-size: 18px; }
+	.pnt-tools { grid-template-columns: repeat(2, 36px); }
+	.pnt-cur { width: 38px; height: 38px; }
+	.sw { width: 26px; height: 26px; }
+	.pnt-sw { flex-basis: 222px; grid-template-columns: repeat(auto-fill, 26px); }
+	.cat-pic { width: calc(4 * 26px + 3 * 6px); } /* still as wide as the row of coat swatches under it */
 }
 
 /* very narrow screens: tighten the taskbar and drop the word "Start" */

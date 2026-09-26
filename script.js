@@ -15,6 +15,7 @@
 	     data-menu       comma-separated menu bar items
 	     data-file       list it in My Computer
 	     data-start      "menu" or "programs": list it in the Start menu
+	     data-nomax      no maximize button
 	   An element inside a window can carry data-autofocus to take focus whenever that window is opened or brought forward.
 	   Whatever a window doesn't already contain (title bar, taskbar button) is built here. Everything visible on first
 	   load is written out in the HTML, so the page looks the same before this script runs or without it. */
@@ -34,10 +35,12 @@
 				var bar = make('div', { 'class': 'titlebar' }, [
 					document.createTextNode(d.icon + ' ' + (d.title || d.name)),
 					make('span', { 'class': 'btns' }, [
-						make('button', { 'class': 'tb', type: 'button', 'data-min': id, 'aria-label': 'Minimize ' + d.name, text: '_' }),
-						make('span', { 'class': 'tb', 'aria-hidden': 'true', text: '□' }),
+						make('button', { 'class': 'tb', type: 'button', 'data-min': id, 'aria-label': 'Minimize ' + d.name, text: '_' })
+					].concat('nomax' in d ? [] : [
+						make('button', { 'class': 'tb', type: 'button', 'data-max': id, 'aria-label': 'Maximize ' + d.name, text: '□' })
+					], [
 						make('button', { 'class': 'tb', type: 'button', 'data-close': id, 'aria-label': 'Close ' + d.name, text: '×' })
-					])
+					]))
 				]);
 				w.insertBefore(bar, w.firstChild);
 				if (d.menu) {
@@ -87,6 +90,22 @@
 		active = w;
 		ids.forEach(function (id) { tasks[id].classList.toggle('on', wins[id] === w); });
 		syncUrl();
+		coverUp();
+	}
+	/* Whatever's behind a maximized window (the desktop icons, and the windows under it) can't be seen, so it's made inert
+	   too: out of reach for the keyboard and screen readers as well as the mouse. Windows brought in front of it aren't. */
+	var icons = document.querySelector('.icons');
+	function coverUp() {
+		var top = null;
+		ids.forEach(function (id) {
+			var w = wins[id];
+			if (maxed(w) && !gone(w) && (!top || (+w.style.zIndex || 0) > (+top.style.zIndex || 0))) top = w;
+		});
+		icons.inert = !!top;
+		ids.forEach(function (id) {
+			var w = wins[id];
+			w.inert = !!top && w !== top && (+w.style.zIndex || 0) < (+top.style.zIndex || 0);
+		});
 	}
 	function raise(w) { if (+w.style.zIndex !== z) w.style.zIndex = ++z; setActive(w); } /* a window already on top isn't restyled again */
 	function topVisible() {
@@ -124,9 +143,13 @@
 		if (gone(w) || w.dataset.busy) return;
 		function finish() {
 			w.classList.add('is-gone');
-			if (kind === 'close') { w.style.removeProperty('--sy'); w.style.removeProperty('--vp'); delete w.dataset.landing; }
+			if (kind === 'close') {
+				w.style.removeProperty('--sy'); w.style.removeProperty('--vp'); delete w.dataset.landing; maximize(w, false);
+				w.dispatchEvent(new CustomEvent('closed')); /* lets a window let go of whatever it was holding (Paint's picture) */
+			}
 			delete w.dataset.busy;
 			if (active === w) { var n = topVisible(); if (n) raise(n); else setActive(null); }
+			coverUp();
 		}
 		if (reduce) { finish(); return; }
 		w.dataset.busy = '1';
@@ -213,11 +236,38 @@
 		play(w, 'restoring', function () { delete w.dataset.busy; });
 	}
 
+	/* Maximized, a window fills the screen above the taskbar (.maxed in style.css) until it's restored or closed; minimizing
+	   keeps it that way. One that's part of the home page's layout leaves a stand-in of its size behind, so the windows
+	   next to it don't shift into its place in the meantime. */
+	function maxed(w) { return w.classList.contains('maxed'); }
+	function maximize(w, on) {
+		if (on === maxed(w)) return;
+		var btn = w.querySelector('[data-max]'), ph = w.previousElementSibling;
+		if (on && !w.classList.contains('popup')) {
+			ph = make('div', { 'class': 'win-ph', 'aria-hidden': 'true' });
+			ph.style.height = w.getBoundingClientRect().height + 'px';
+			w.before(ph);
+		} else if (!on && ph && ph.classList.contains('win-ph')) ph.remove();
+		w.classList.toggle('maxed', on);
+		w.dispatchEvent(new CustomEvent('maxchange')); /* lets a window rearrange what's inside (Paint grows its canvas) */
+		coverUp();
+		if (btn) {
+			btn.textContent = on ? '❐' : '□';
+			btn.setAttribute('aria-label', (on ? 'Restore ' : 'Maximize ') + w.dataset.name);
+		}
+	}
+	function toggleMax(w) {
+		if (w.dataset.busy || !w.querySelector('[data-max]')) return;
+		raise(w);
+		maximize(w, !maxed(w));
+	}
+
 	/* a light haptic tick on phones that support it (Android; iOS Safari has no vibration API) */
 	function buzz() { if ('vibrate' in navigator && !reduce) navigator.vibrate(10); }
 
 	/* buttons */
 	document.querySelectorAll('[data-min]').forEach(function (b) { b.addEventListener('click', function () { buzz(); hide(b.dataset.min, 'min'); }); });
+	document.querySelectorAll('[data-max]').forEach(function (b) { b.addEventListener('click', function () { buzz(); toggleMax(wins[b.dataset.max]); }); });
 	document.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', function () { buzz(); hide(b.dataset.close, 'close'); }); });
 	document.querySelectorAll('[data-open]').forEach(function (b) {
 		b.addEventListener('click', function () { buzz(); start.open = false; show(b.dataset.open); });
@@ -275,6 +325,10 @@
 		if (off.classList.contains('on')) return;
 		Array.from(document.body.children).forEach(function (el) { el.inert = false; });
 		shutDown = false;
+		/* Restarting starts every window at its normal size. Closing a window already does that, but Shut Down can't close
+		   a window that's in the middle of its minimize animation, so a maximized one minimized just before Shut Down
+		   would otherwise come back maximized. */
+		ids.forEach(function (id) { maximize(wins[id], false); });
 		var home = ids.filter(function (id) { return !wins[id].classList.contains('popup'); });
 		home.forEach(function (id) { show(id, true); });
 		raise(wins[home[0]]);
@@ -305,6 +359,7 @@
 		{ id: 'strawberry', name: 'Strawberry Milk', sparks: ['♡', '🍓', '✿', '♡'] },
 		{ id: 'matcha', name: 'Matcha Latte', sparks: ['🍃', '✿', '❀', '🍵'] },
 		{ id: 'starlight', name: 'Starlight', sparks: ['★', '✦', '✧', '☾', '✨'] },
+		{ id: 'notebook', name: 'Notebook', sparks: ['✎', '★', '✓', '☺', '✏️'] },
 		{ id: 'dark', name: 'Dark', sparks: ['✦', '✧', '·'] }
 	];
 	function themeById(id) { return THEMES.filter(function (t) { return t.id === id; })[0]; }
@@ -381,7 +436,7 @@
 		bar.addEventListener('pointerdown', function (e) {
 			if (e.button !== 0 || e.target.closest('button')) return;
 			var w = bar.closest('.win');
-			if (w.dataset.busy) return;
+			if (w.dataset.busy || maxed(w)) return; /* a maximized window stays put until it's restored */
 			/* preventDefault() below also stops the browser from moving focus off a text box, and a text box that keeps focus
 			   brings the keyboard back up on phones, so let go of it here */
 			var held = document.activeElement;
@@ -398,6 +453,8 @@
 		bar.addEventListener('pointerup', onEnd);
 		bar.addEventListener('pointercancel', onEnd);
 		bar.addEventListener('lostpointercapture', onEnd);
+		/* double-clicking a title bar maximizes or restores its window, like the button */
+		bar.addEventListener('dblclick', function (e) { if (!e.target.closest('button')) toggleMax(bar.closest('.win')); });
 	});
 
 	/* layout changes between desktop and phone: put the windows back where they started (and a floating window opened on
@@ -484,7 +541,12 @@
 			onTap(b, function () { b.dataset.stamp ? pick('stamp', b.dataset.stamp) : pick(b.dataset.tool); });
 		});
 
-		function snapshot() { undo.push(ctx.getImageData(0, 0, cv.width, cv.height)); if (undo.length > 20) undo.shift(); }
+		/* up to 20 steps back, fewer once the canvas has grown big (maximized): it keeps at most ~40 MB of them */
+		function snapshot() {
+			undo.push(ctx.getImageData(0, 0, cv.width, cv.height));
+			var bytes = undo.reduce(function (n, s) { return n + s.data.length; }, 0);
+			while (undo.length > 1 && (undo.length > 20 || bytes > 40e6)) bytes -= undo.shift().data.length;
+		}
 		onTap(document.getElementById('pUndo'), function () { if (undo.length) ctx.putImageData(undo.pop(), 0, 0); });
 		onTap(document.getElementById('pClear'), function () {
 			snapshot(); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
@@ -532,6 +594,38 @@
 			line(last, p, widths[tool], tool === 'eraser' ? '#fff' : color);
 			last = p;
 		});
+		/* Maximized, the canvas grows to fill the room it has, keeping what's drawn in its top-left corner. It never shrinks
+		   back, so nothing drawn is lost: restored, the whole picture is shown smaller to fit the window (style.css), and on
+		   a screen too small for it, it's scaled down the same way. */
+		var pwin = cv.closest('.win'), pmain = cv.closest('.pnt-main'), pal = pmain.querySelector('.pnt-pal');
+		function fit() {
+			if (!maxed(pwin)) { cv.style.width = cv.style.height = ''; return; }
+			var bw = pmain.clientWidth - 4, bh = pmain.clientHeight - pal.offsetHeight - 6 - 4; /* less the palette, the gap and the frame */
+			if (bw <= 0 || bh <= 0) return; /* minimized: fitted again when it's resized after coming back */
+			if (bw > cv.width || bh > cv.height) {
+				var keep = ctx.getImageData(0, 0, cv.width, cv.height);
+				cv.width = Math.max(cv.width, Math.floor(bw)); cv.height = Math.max(cv.height, Math.floor(bh));
+				ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+				ctx.putImageData(keep, 0, 0);
+			}
+			var s = Math.min(1, bw / cv.width, bh / cv.height);
+			cv.style.width = cv.width * s + 'px'; cv.style.height = cv.height * s + 'px';
+		}
+		pwin.addEventListener('maxchange', fit);
+		window.addEventListener('resize', fit);
+
+		/* closed, it lets go of the picture and its undo steps (which can be big), so it opens next time as it first did:
+		   a blank canvas at its first size, with the pencil in the first color */
+		var firstW = cv.width, firstH = cv.height, swatches = sw.querySelectorAll('.sw');
+		pwin.addEventListener('closed', function () {
+			stop(); undo = [];
+			cv.width = firstW; cv.height = firstH; cv.style.width = cv.style.height = '';
+			ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+			color = palette[0][0]; cur.style.background = color;
+			swatches.forEach(function (s, i) { s.classList.toggle('on', i === 0); });
+			pick('pencil');
+		});
+
 		function stop() { drawing = false; clearInterval(sprayTimer); }
 		cv.addEventListener('pointerup', stop);
 		cv.addEventListener('pointercancel', stop);
@@ -895,7 +989,7 @@
 			var open = ids.map(function (id) { return wins[id]; }).filter(function (w) { return !gone(w) && !w.dataset.busy; });
 			open.forEach(function (w) {
 				var r = w.getBoundingClientRect();
-				if (r.top < 0 || r.top >= floor) return;
+				if (r.top < 0 || r.top >= floor || maxed(w)) return; /* a maximized window's top is the top of the screen */
 				var segs = [[Math.max(r.left, 0), Math.min(r.right, window.innerWidth)]];
 				open.forEach(function (o) {
 					if (o === w || !above(o, w)) return;
