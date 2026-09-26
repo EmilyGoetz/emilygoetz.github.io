@@ -6,24 +6,157 @@
  * i'm a mobile dev
  */
 
-:root {
+/* ---------- themes ---------- */
+/* Each theme is just these colors (and the Start button's icon). They're set on [data-theme] as well as :root, so a
+   theme's sample in the picker (which carries its own data-theme) shows that theme's colors whatever the page uses.
+   script.js lists the themes and puts the chosen one on <html>; desktop.html restores it before the page first paints. */
+:root, [data-theme="blossom"] {
 	--face: #efe3f7;
 	--face-l: #f8f1fc;
 	--face-d: #9a86b5;
 	--ink: #3a2f4a;
-	--pink: #ff8fc8;
-	--pink-d: #c73d86; /* --pink deepened enough to read as text on white */
-	--lav: #a98cf0;
-	--purple: #7b4fa3;
+	--title-a: #ff8fc8; /* title bar gradient, left to right */
+	--title-b: #a98cf0;
+	--accent: #c73d86; /* links in the text windows: deep enough to read as text on white */
+	--select: #7b4fa3; /* a selected icon's label */
 	--desktop: #8fdccd;
+	--wallpaper: radial-gradient(circle, rgba(255, 255, 255, .45) 1px, transparent 1.6px) 0 0 / 14px 14px, var(--desktop);
 	--mat: #d8cbe6;
 	--link: #4b32c9;
 	--link-visited: #b0388f;
+	--start-ico: "🌸";
+	--paper: #fff; /* inside text boxes and documents */
+	--hi: #fff; /* the lit edge of a bevel */
+	--edge: var(--ink); /* the shadowed edge of a bevel, and outlines */
+	--hint: var(--face-d); /* placeholder text on --paper */
+	--shadow: rgba(58, 47, 74, .3); /* drop shadows: --edge at 30%, written out (color-mix() is too new for some older iPhones) */
+	--icon-ink: #fff; /* desktop icon labels (every theme gets these unless it sets its own) */
+	--icon-halo: 1px 1px 0 var(--edge);
+}
+[data-theme="classic"] {
+	--face: #c0c0c0;
+	--face-l: #dfdfdf;
+	--face-d: #808080;
+	--ink: #000;
+	--shadow: rgba(0, 0, 0, .3);
+	--title-a: #000080;
+	--title-b: #1084d0;
+	--accent: #0000ee;
+	--select: #000080;
+	--desktop: #5fa9e6;
+	--wallpaper:
+		radial-gradient(ellipse 240px 54px at 20% 20%, rgba(255, 255, 255, .28), transparent 70%),
+		radial-gradient(ellipse 128px 38px at 24% 17%, rgba(255, 255, 255, .18), transparent 70%),
+		radial-gradient(ellipse 352px 70px at 72% 13%, rgba(255, 255, 255, .24), transparent 70%),
+		radial-gradient(ellipse 272px 57px at 56% 60%, rgba(255, 255, 255, .18), transparent 70%),
+		radial-gradient(ellipse 144px 35px at 60% 57%, rgba(255, 255, 255, .14), transparent 70%),
+		radial-gradient(ellipse 384px 73px at 14% 82%, rgba(255, 255, 255, .22), transparent 70%),
+		radial-gradient(ellipse 208px 44px at 88% 78%, rgba(255, 255, 255, .16), transparent 70%),
+		linear-gradient(#3d8ede, #a5d4f7);
+	--mat: #808080;
+	--link: #0000ee;
+	--link-visited: #551a8b;
+	--start-ico: "🪟";
+}
+[data-theme="strawberry"] {
+	--face: #fff0f2;
+	--face-l: #fff8f9;
+	--face-d: #de9aa8;
+	--ink: #5a2833;
+	--shadow: rgba(90, 40, 51, .3);
+	--title-a: #ff5c7c;
+	--title-b: #ffa9b9;
+	--accent: #d12c55;
+	--select: #d12c55;
+	--desktop: #ffb8c6;
+	--wallpaper:
+		repeating-linear-gradient(0deg, rgba(255, 255, 255, .4) 0 14px, transparent 14px 28px),
+		repeating-linear-gradient(90deg, rgba(255, 255, 255, .4) 0 14px, transparent 14px 28px),
+		var(--desktop);
+	--mat: #ffd9e0;
+	--link: #c2185b;
+	--link-visited: #8e2a6b;
+	--start-ico: "🍓";
+	/* white labels get lost in the gingham, so they're dark with a white glow instead */
+	--icon-ink: var(--ink);
+	--icon-halo: 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff;
+}
+[data-theme="matcha"] {
+	--face: #f3eedc;
+	--face-l: #faf7ec;
+	--face-d: #a89e78;
+	--ink: #3a3a28;
+	--shadow: rgba(58, 58, 40, .3);
+	--title-a: #5f8f3e;
+	--title-b: #b8cf78;
+	--accent: #4a7a26;
+	--select: #5f8f3e;
+	--desktop: #a3bf7f;
+	--wallpaper:
+		linear-gradient(rgba(250, 247, 236, .28) 1px, transparent 1px) 0 0 / 18px 18px,
+		linear-gradient(90deg, rgba(250, 247, 236, .28) 1px, transparent 1px) 0 0 / 18px 18px,
+		var(--desktop);
+	--mat: #e3dcc2;
+	--link: #2f6a3a;
+	--link-visited: #7a5a2a;
+	--start-ico: "🍵";
+}
+[data-theme="starlight"] {
+	--face: #e6e2f6;
+	--face-l: #f3f1fb;
+	--face-d: #8580b0;
+	--ink: #23203f;
+	--shadow: rgba(35, 32, 63, .3);
+	--title-a: #3a3a9e;
+	--title-b: #c27ad0;
+	--accent: #6a3fc0;
+	--select: #4a3fb0;
+	--desktop: #262457;
+	/* Two tiles of randomly scattered stars (faint pinpricks, and brighter ones with a soft glow, a few of them gold),
+	   repeating at different odd sizes so the pattern doesn't visibly line up, over a little nebula haze. Generated once
+	   with a seeded random script; the second tile is offset and larger so the two drift against each other. */
+	--stars-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='419' height='383'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='.9'/%3E%3Cstop offset='.25' stop-color='%23d6c8ff' stop-opacity='.35'/%3E%3Cstop offset='1' stop-color='%23d6c8ff' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='y'%3E%3Cstop offset='0' stop-color='%23fff3cc' stop-opacity='.95'/%3E%3Cstop offset='.25' stop-color='%23ffe296' stop-opacity='.35'/%3E%3Cstop offset='1' stop-color='%23ffe296' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='139' cy='63' r='0.4' fill='%23fff' opacity='0.54'/%3E%3Ccircle cx='155' cy='29' r='0.4' fill='%23fff' opacity='0.50'/%3E%3Ccircle cx='36' cy='41' r='0.7' fill='%23fff' opacity='0.36'/%3E%3Ccircle cx='98' cy='238' r='4.4' fill='url(%23g)'/%3E%3Ccircle cx='98' cy='238' r='1.3' fill='%23fff'/%3E%3Ccircle cx='27' cy='323' r='0.5' fill='%23fff' opacity='0.35'/%3E%3Ccircle cx='132' cy='308' r='0.6' fill='%23fff' opacity='0.59'/%3E%3Ccircle cx='158' cy='209' r='0.4' fill='%23fff' opacity='0.39'/%3E%3Ccircle cx='282' cy='165' r='0.6' fill='%23fff' opacity='0.50'/%3E%3Ccircle cx='129' cy='300' r='0.5' fill='%23fff' opacity='0.56'/%3E%3Ccircle cx='220' cy='329' r='6.4' fill='url(%23g)'/%3E%3Ccircle cx='220' cy='329' r='0.9' fill='%23fff'/%3E%3Ccircle cx='177' cy='286' r='0.6' fill='%23fff' opacity='0.32'/%3E%3Ccircle cx='277' cy='289' r='0.8' fill='%23fff' opacity='0.44'/%3E%3Ccircle cx='288' cy='226' r='0.6' fill='%23fff' opacity='0.68'/%3E%3Ccircle cx='389' cy='182' r='0.4' fill='%23fff' opacity='0.62'/%3E%3Ccircle cx='269' cy='372' r='4.4' fill='url(%23g)'/%3E%3Ccircle cx='269' cy='372' r='1.1' fill='%23fff'/%3E%3Ccircle cx='17' cy='177' r='0.4' fill='%23fff' opacity='0.33'/%3E%3Ccircle cx='318' cy='55' r='0.6' fill='%23fff' opacity='0.69'/%3E%3Ccircle cx='40' cy='173' r='0.8' fill='%23fff' opacity='0.67'/%3E%3Ccircle cx='356' cy='110' r='0.5' fill='%23fff' opacity='0.70'/%3E%3Ccircle cx='394' cy='63' r='0.5' fill='%23fff' opacity='0.41'/%3E%3Ccircle cx='203' cy='224' r='0.4' fill='%23fff' opacity='0.49'/%3E%3Ccircle cx='157' cy='216' r='4.8' fill='url(%23g)'/%3E%3Ccircle cx='157' cy='216' r='1.1' fill='%23fff'/%3E%3Ccircle cx='281' cy='28' r='6.1' fill='url(%23g)'/%3E%3Ccircle cx='281' cy='28' r='1.2' fill='%23fff'/%3E%3Ccircle cx='166' cy='154' r='0.7' fill='%23fff' opacity='0.33'/%3E%3Ccircle cx='35' cy='85' r='0.5' fill='%23fff' opacity='0.32'/%3E%3Ccircle cx='8' cy='64' r='0.5' fill='%23fff' opacity='0.31'/%3E%3Ccircle cx='360' cy='233' r='0.5' fill='%23fff' opacity='0.46'/%3E%3Ccircle cx='155' cy='53' r='4.6' fill='url(%23g)'/%3E%3Ccircle cx='155' cy='53' r='1.0' fill='%23fff'/%3E%3Ccircle cx='43' cy='46' r='0.5' fill='%23fff' opacity='0.67'/%3E%3Ccircle cx='73' cy='16' r='3.5' fill='url(%23g)'/%3E%3Ccircle cx='73' cy='16' r='1.1' fill='%23fff'/%3E%3Ccircle cx='19' cy='202' r='5.4' fill='url(%23g)'/%3E%3Ccircle cx='19' cy='202' r='0.9' fill='%23fff'/%3E%3Ccircle cx='156' cy='69' r='5.7' fill='url(%23g)'/%3E%3Ccircle cx='156' cy='69' r='1.0' fill='%23fff'/%3E%3Ccircle cx='98' cy='306' r='5.8' fill='url(%23g)'/%3E%3Ccircle cx='98' cy='306' r='1.2' fill='%23fff'/%3E%3Ccircle cx='306' cy='91' r='0.5' fill='%23fff' opacity='0.31'/%3E%3C/svg%3E");
+	--stars-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='577' height='541'%3E%3Cdefs%3E%3CradialGradient id='g'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='.9'/%3E%3Cstop offset='.25' stop-color='%23d6c8ff' stop-opacity='.35'/%3E%3Cstop offset='1' stop-color='%23d6c8ff' stop-opacity='0'/%3E%3C/radialGradient%3E%3CradialGradient id='y'%3E%3Cstop offset='0' stop-color='%23fff3cc' stop-opacity='.95'/%3E%3Cstop offset='.25' stop-color='%23ffe296' stop-opacity='.35'/%3E%3Cstop offset='1' stop-color='%23ffe296' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='527' cy='506' r='5.1' fill='url(%23y)'/%3E%3Ccircle cx='527' cy='506' r='1.0' fill='%23fff'/%3E%3Ccircle cx='305' cy='76' r='0.6' fill='%23fff' opacity='0.40'/%3E%3Ccircle cx='263' cy='21' r='0.7' fill='%23fff' opacity='0.49'/%3E%3Ccircle cx='296' cy='393' r='0.4' fill='%23fff' opacity='0.65'/%3E%3Ccircle cx='338' cy='353' r='0.8' fill='%23fff' opacity='0.46'/%3E%3Ccircle cx='434' cy='202' r='0.7' fill='%23fff' opacity='0.44'/%3E%3Ccircle cx='56' cy='257' r='4.6' fill='url(%23g)'/%3E%3Ccircle cx='56' cy='257' r='1.1' fill='%23fff'/%3E%3Ccircle cx='110' cy='102' r='0.7' fill='%23fff' opacity='0.39'/%3E%3Ccircle cx='72' cy='60' r='0.5' fill='%23fff' opacity='0.56'/%3E%3Ccircle cx='468' cy='182' r='0.5' fill='%23fff' opacity='0.44'/%3E%3Ccircle cx='444' cy='296' r='0.4' fill='%23fff' opacity='0.65'/%3E%3Ccircle cx='405' cy='443' r='0.6' fill='%23fff' opacity='0.71'/%3E%3Ccircle cx='341' cy='504' r='0.8' fill='%23fff' opacity='0.33'/%3E%3Ccircle cx='242' cy='20' r='6.4' fill='url(%23g)'/%3E%3Ccircle cx='242' cy='20' r='1.2' fill='%23fff'/%3E%3Ccircle cx='540' cy='291' r='4.2' fill='url(%23g)'/%3E%3Ccircle cx='540' cy='291' r='1.3' fill='%23fff'/%3E%3Ccircle cx='219' cy='109' r='0.6' fill='%23fff' opacity='0.39'/%3E%3Ccircle cx='532' cy='507' r='0.4' fill='%23fff' opacity='0.54'/%3E%3Ccircle cx='103' cy='293' r='4.5' fill='url(%23g)'/%3E%3Ccircle cx='103' cy='293' r='1.3' fill='%23fff'/%3E%3Ccircle cx='257' cy='188' r='6.1' fill='url(%23g)'/%3E%3Ccircle cx='257' cy='188' r='1.1' fill='%23fff'/%3E%3Ccircle cx='239' cy='372' r='3.8' fill='url(%23g)'/%3E%3Ccircle cx='239' cy='372' r='0.9' fill='%23fff'/%3E%3Ccircle cx='238' cy='413' r='0.6' fill='%23fff' opacity='0.67'/%3E%3Ccircle cx='69' cy='339' r='0.6' fill='%23fff' opacity='0.68'/%3E%3Ccircle cx='147' cy='508' r='0.6' fill='%23fff' opacity='0.54'/%3E%3Ccircle cx='140' cy='302' r='0.6' fill='%23fff' opacity='0.62'/%3E%3Ccircle cx='10' cy='206' r='6.0' fill='url(%23y)'/%3E%3Ccircle cx='10' cy='206' r='0.9' fill='%23fff'/%3E%3Ccircle cx='390' cy='99' r='0.6' fill='%23fff' opacity='0.34'/%3E%3Ccircle cx='400' cy='260' r='0.6' fill='%23fff' opacity='0.55'/%3E%3Ccircle cx='303' cy='164' r='6.1' fill='url(%23y)'/%3E%3Ccircle cx='303' cy='164' r='1.2' fill='%23fff'/%3E%3Ccircle cx='287' cy='416' r='0.6' fill='%23fff' opacity='0.43'/%3E%3Ccircle cx='187' cy='191' r='0.8' fill='%23fff' opacity='0.45'/%3E%3C/svg%3E");
+	--wallpaper:
+		var(--stars-a) 0 0 / 419px 383px,
+		var(--stars-b) 211px 157px / 577px 541px,
+		radial-gradient(ellipse 55% 40% at 80% 18%, rgba(194, 122, 208, .22), transparent),
+		radial-gradient(ellipse 50% 45% at 15% 85%, rgba(90, 110, 220, .2), transparent),
+		linear-gradient(#1a1944, #3f2a6e);
+	--mat: #cfc9ea;
+	--link: #3d36b8;
+	--link-visited: #8e3a9e;
+	--start-ico: "🌙";
+}
+[data-theme="dark"] {
+	color-scheme: dark; /* scrollbars and text boxes follow */
+	--face: #2d2a35;
+	--face-l: #3a3644;
+	--face-d: #1c1a22;
+	--hi: #4d4858;
+	--edge: #0c0b0f;
+	--ink: #e9e4f2;
+	--shadow: rgba(12, 11, 15, .3);
+	--paper: #1f1d25;
+	--hint: #8a8497; /* --face-d is too dark to read on --paper here */
+	--title-a: #4a3f73;
+	--title-b: #8a5f9e;
+	--accent: #ff9fd0;
+	--select: #7a5cb8;
+	--desktop: #17161d;
+	--wallpaper: radial-gradient(circle, rgba(255, 255, 255, .07) 1px, transparent 1.6px) 0 0 / 14px 14px, var(--desktop);
+	--mat: #2d2a35;
+	--link: #b3a8ff;
+	--link-visited: #e8a0d4;
+	--start-ico: "🔮";
+}
+
+:root {
 
 	/* the raised and sunken edges shared by every window and control */
-	--bevel-out: inset -1px -1px var(--ink), inset 1px 1px #fff, inset -2px -2px var(--face-d);
-	--bevel-in: inset 1px 1px var(--ink), inset -1px -1px #fff;
-	--bevel-soft: inset 1px 1px var(--face-d), inset -1px -1px #fff;
+	--bevel-out: inset -1px -1px var(--edge), inset 1px 1px var(--hi), inset -2px -2px var(--face-d);
+	--bevel-in: inset 1px 1px var(--edge), inset -1px -1px var(--hi);
+	--bevel-soft: inset 1px 1px var(--face-d), inset -1px -1px var(--hi);
 	--bevel-win: var(--bevel-out), inset 2px 2px var(--face-l);
 	--bevel-well: var(--bevel-in), inset 2px 2px var(--face-d), inset -2px -2px var(--face-l);
 
@@ -37,8 +170,9 @@
 	/* window z-indexes count up from script.js; these stay above all of them */
 	--z-taskbar: 100000;
 	--z-cat: 100001; /* the cat walks along the taskbar, so it's above it too */
-	--z-spark: 100002;
-	--z-off: 100003; /* the switched-off screen covers everything */
+	--z-menus: 100002; /* ...except while the Start menu or theme picker is open: they're drawn in front of the cat */
+	--z-spark: 100003;
+	--z-off: 100004; /* the switched-off screen covers everything */
 	--vh: 1vh;
 }
 /* on phones vh includes the area behind the browser's toolbar, dvh doesn't */
@@ -72,7 +206,7 @@ body {
 	overflow-x: clip;
 	font: 12px/1.45 Tahoma, Verdana, sans-serif;
 	color: var(--ink);
-	background: var(--desktop) radial-gradient(circle, rgba(255, 255, 255, .45) 1px, transparent 1.6px) 0 0 / 14px 14px;
+	background: var(--wallpaper);
 	/* center the windows vertically (auto margins on .windows, so a tall group just starts at the top instead of getting clipped) */
 	display: flex; flex-direction: column;
 }
@@ -86,13 +220,14 @@ a:visited { color: var(--link-visited); }
 .icon {
 	display: block; width: 100%; padding: 0; border: 0; background: none;
 	font: inherit; font-size: 11px; line-height: 1.2; text-align: center;
-	color: #fff; text-shadow: 1px 1px 0 var(--ink); cursor: default;
+	color: var(--icon-ink); text-shadow: var(--icon-halo); cursor: default;
 }
 .icon b { display: block; font-size: 32px; font-weight: normal; text-shadow: none; }
 .icon span { padding: 0 3px; }
 button.icon { cursor: pointer; }
 button.icon:focus-visible { outline: 0; }
-button.icon:focus-visible span, button.icon:active span { background: var(--purple); outline: 1px dotted #fff; }
+/* a selected label is the usual white on the highlight, even in a theme whose labels are otherwise dark (Strawberry Milk) */
+button.icon:focus-visible span, button.icon:active span { background: var(--select); color: #fff; text-shadow: 1px 1px 0 var(--edge); outline: 1px dotted #fff; }
 
 /* ---------- windows ---------- */
 .windows {
@@ -109,9 +244,9 @@ button.icon:focus-visible span, button.icon:active span { background: var(--purp
 	scroll-margin: 12px 0 calc(var(--taskbar-h) + 12px); /* keep clear of the taskbar when scrolled into view */
 	padding: 3px;
 	background: var(--face);
-	box-shadow: var(--bevel-win), 5px 5px 0 rgba(58, 47, 74, .3);
+	box-shadow: var(--bevel-win), 5px 5px 0 var(--shadow);
 }
-.win.dragging { box-shadow: var(--bevel-win), 10px 12px 0 rgba(58, 47, 74, .28); }
+.win.dragging { box-shadow: var(--bevel-win), 10px 12px 0 var(--shadow); }
 /* hidden windows keep their place in the layout, so nothing shifts when others come and go */
 .win.is-gone { visibility: hidden; pointer-events: none; }
 
@@ -119,7 +254,7 @@ button.icon:focus-visible span, button.icon:active span { background: var(--purp
 	display: flex; align-items: center; gap: 6px;
 	padding: 3px 4px;
 	color: #fff; font-weight: bold;
-	background: linear-gradient(90deg, var(--pink), var(--lav));
+	background: linear-gradient(90deg, var(--title-a), var(--title-b));
 	cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
 }
 .win.dragging .titlebar { cursor: grabbing; }
@@ -134,7 +269,7 @@ button.tb:active { box-shadow: var(--bevel-in); line-height: 16px; }
 button.tb:focus-visible { outline: 1px dotted var(--ink); outline-offset: -3px; }
 .menubar { display: flex; gap: 14px; padding: 2px 6px; }
 .content {
-	background: #fff; padding: 10px 12px; margin: 0 1px 1px;
+	background: var(--paper); padding: 10px 12px; margin: 0 1px 1px;
 	box-shadow: var(--bevel-well);
 }
 .status { display: flex; justify-content: space-between; gap: 12px; padding: 3px 6px 1px; font-size: 11px; }
@@ -145,20 +280,20 @@ button.tb:focus-visible { outline: 1px dotted var(--ink); outline-offset: -3px; 
 .notepad p { margin: 0 0 8px; }
 .notepad .sub { padding-left: 18px; }
 .notepad .sub::before { content: "* "; }
-/* links in the text windows (About Me and the Markdown documents): bold deep pink, underlined only when pointed at */
-.notepad a, .notepad a:visited { color: var(--pink-d); font-weight: bold; text-decoration: none; }
+/* links in the text windows (About Me and the Markdown documents): bold in the theme's accent color, underlined only when pointed at */
+.notepad a, .notepad a:visited { color: var(--accent); font-weight: bold; text-decoration: none; }
 .notepad a:hover, .notepad a:focus-visible { text-decoration: underline; }
 
 .mail .hide { display: none; }
 
 /* photo.jpg */
 .photo .content { padding: 8px; text-align: center; background: var(--mat); }
-.photo img { display: block; width: 100%; max-width: 300px; height: auto; aspect-ratio: 1; object-fit: cover; margin: 0 auto; border: 1px solid var(--ink); pointer-events: none; }
+.photo img { display: block; width: 100%; max-width: 300px; height: auto; aspect-ratio: 1; object-fit: cover; margin: 0 auto; border: 1px solid var(--edge); pointer-events: none; }
 
 /* Contact.exe */
 .contact .content { background: var(--face); box-shadow: none; }
 .field { display: grid; grid-template-columns: 62px 1fr; gap: 6px; align-items: center; margin-bottom: 6px; }
-.field .val { background: #fff; padding: 2px 6px; box-shadow: var(--bevel-in); overflow-wrap: anywhere; }
+.field .val { background: var(--paper); padding: 2px 6px; box-shadow: var(--bevel-in); overflow-wrap: anywhere; }
 .dlg-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
 .dlg-btns button, .dlg-btns a {
 	min-width: 70px; padding: 3px 8px; border: 0; text-align: center; font: inherit; color: inherit; text-decoration: none;
@@ -235,8 +370,10 @@ button.tb:focus-visible { outline: 1px dotted var(--ink); outline-offset: -3px; 
 .taskbar {
 	position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-taskbar);
 	display: flex; align-items: center; gap: 6px; padding: 4px 6px;
-	background: var(--face); box-shadow: inset 0 2px #fff, 0 -1px var(--face-d);
+	background: var(--face); box-shadow: inset 0 2px var(--hi), 0 -1px var(--face-d);
 }
+/* the taskbar is its own layer, so its menus can only come in front of the cat if the whole taskbar does */
+.taskbar:has(details[open]) { z-index: var(--z-menus); }
 details.start { position: relative; }
 details.start summary {
 	list-style: none; cursor: pointer; padding: 3px 12px; font-weight: bold; font-size: 13px;
@@ -247,7 +384,7 @@ details.start summary::-webkit-details-marker { display: none; }
 details.start ul {
 	position: absolute; bottom: 100%; left: 0; margin: 0 0 4px; padding: 3px; min-width: 190px; list-style: none;
 	background: var(--face);
-	box-shadow: var(--bevel-out), 4px 4px 0 rgba(58, 47, 74, .3);
+	box-shadow: var(--bevel-out);
 }
 details.start li button {
 	display: block; width: 100%; padding: 6px 10px; border: 0; background: none; text-align: left;
@@ -258,8 +395,8 @@ details.start li button .ico { display: inline-block; min-width: 1.6em; }
 details.start li button svg { vertical-align: -2px; }
 details.start li button:hover, details.start li button:focus-visible,
 /* a row whose flyout is showing stays lit while the pointer is over the flyout */
-details.start li.has-sub:hover > button, details.start li.has-sub:focus-within > button, details.start li.has-sub.open > button { background: linear-gradient(90deg, var(--pink), var(--lav)); color: #fff; outline: 0; }
-details.start li.sep { height: 2px; margin: 3px 2px; box-shadow: inset 0 1px var(--face-d), inset 0 -1px #fff; }
+details.start li.has-sub:hover > button, details.start li.has-sub:focus-within > button, details.start li.has-sub.open > button { background: linear-gradient(90deg, var(--title-a), var(--title-b)); color: #fff; outline: 0; }
+details.start li.sep { height: 2px; margin: 3px 2px; box-shadow: inset 0 1px var(--face-d), inset 0 -1px var(--hi); }
 
 /* Programs flyout */
 details.start li.has-sub { position: relative; }
@@ -283,7 +420,35 @@ details.start li.has-sub.open > ul.sub { display: block; }
 /* script.js adds .icons-only when the buttons' names wouldn't all fit, leaving just the icons (a bit bigger, to be easy to tap) */
 .tasks.icons-only .task .lb { display: none; }
 .tasks.icons-only .task { flex: none; padding: 3px 12px; font-size: 14px; }
-.tray { flex: none; margin-left: auto; padding: 3px 10px; white-space: nowrap; box-shadow: var(--bevel-soft); }
+.tray { position: relative; flex: none; display: flex; align-items: center; gap: 7px; margin-left: auto; padding: 3px 10px; white-space: nowrap; box-shadow: var(--bevel-soft); }
+details.start summary .ico::before { content: var(--start-ico); }
+
+/* the theme picker: a tray icon beside the clock, opening a little window of themes above it (script.js unhides it and
+   fills in the list, since picking one needs the script anyway) */
+details.themes[hidden] { display: none; }
+details.themes summary { list-style: none; margin-left: -4px; padding: 0 2px; font-size: 13px; cursor: pointer; } /* sits a little closer to the tray's edge than the clock does */
+details.themes summary::-webkit-details-marker { display: none; }
+details.themes summary:focus-visible { outline: 1px dotted var(--ink); }
+details.themes[open] summary { background: var(--face-l); box-shadow: var(--bevel-in); }
+.theme-menu {
+	/* the tray sits 4px into the taskbar, so this meets the taskbar's top edge, like the Start menu */
+	position: absolute; right: -2px; bottom: calc(100% + 4px); padding: 3px;
+	background: var(--face); box-shadow: var(--bevel-win);
+}
+.theme-menu .titlebar { cursor: default; }
+.theme-list { display: grid; gap: 1px; padding: 2px 1px 1px; }
+.theme-opt {
+	display: flex; align-items: center; gap: 7px; width: 100%; padding: 3px 8px 3px 4px; border: 0; background: none; text-align: left;
+	font: inherit; line-height: 16px; color: var(--ink); cursor: pointer;
+}
+.theme-opt:hover, .theme-opt:focus-visible { background: var(--face-l); outline: 0; }
+.theme-opt:focus-visible { box-shadow: inset 0 0 0 1px var(--ink); }
+.theme-opt[aria-pressed="true"] { background: var(--face-l); box-shadow: var(--bevel-in); font-weight: bold; }
+/* a little picture of the theme: its desktop with a window on it (its colors come from its own data-theme) */
+.theme-sample { flex: none; position: relative; width: 24px; height: 16px; background: var(--desktop); box-shadow: var(--bevel-in); }
+.theme-sample::before, .theme-sample::after { content: ""; position: absolute; left: 5px; right: 5px; }
+.theme-sample::before { top: 3px; height: 3px; background: linear-gradient(90deg, var(--title-a), var(--title-b)); }
+.theme-sample::after { top: 6px; height: 7px; background: var(--face); box-shadow: inset 0 -1px var(--face-d); }
 /* the Start button, the taskbar buttons and the clock share one line height, so they come out the same height (and line up)
    whatever the fonts, emoji included, happen to measure */
 details.start summary, .task, .tray { line-height: 20px; }
@@ -344,20 +509,20 @@ details.start { flex: none; }
 .win.ctg .content { display: flex; flex-direction: column; gap: 6px; padding: 6px; background: var(--face); box-shadow: none; }
 .ctg textarea {
 	flex: none; display: block; width: 100%; height: 66px; resize: none; padding: 4px 6px; border: 0; border-radius: 0;
-	font: 16px/1.4 Tahoma, Verdana, sans-serif; color: var(--ink); background: #fff; /* 16px keeps iOS from zooming in on focus */
+	font: 16px/1.4 Tahoma, Verdana, sans-serif; color: var(--ink); background: var(--paper); /* 16px keeps iOS from zooming in on focus */
 	box-shadow: var(--bevel-well);
 }
 .ctg textarea:focus-visible { outline: 1px dotted var(--ink); outline-offset: -4px; }
-.ctg-out { flex: 0 1 300px; min-height: 0; overflow-y: auto; padding: 3px; background: #fff; box-shadow: var(--bevel-well); } /* padded by the bevel's thickness so the rows' highlight stays inside it */
+.ctg-out { flex: 0 1 300px; min-height: 0; overflow-y: auto; padding: 3px; background: var(--paper); box-shadow: var(--bevel-well); } /* padded by the bevel's thickness so the rows' highlight stays inside it */
 .ctg-row {
 	display: block; width: 100%; padding: 5px 8px 6px; border: 0; border-bottom: 1px solid var(--face); background: none;
 	text-align: left; font: inherit; color: var(--ink); cursor: pointer;
 }
-.ctg-row small { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; color: var(--purple); }
+.ctg-row small { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; color: var(--select); }
 .ctg-row .tx { display: block; font-size: 15px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .ctg-row:hover, .ctg-row:focus-visible { background: var(--face-l); outline: 0; }
 .ctg-row:focus-visible { box-shadow: inset 0 0 0 1px var(--ink); }
-.ctg-hint { margin: 0; padding: 18px 8px; text-align: center; color: var(--face-d); }
+.ctg-hint { margin: 0; padding: 18px 8px; text-align: center; color: var(--hint); }
 .ctg-out.empty .ctg-row, .ctg-out:not(.empty) .ctg-hint { display: none; }
 /* ---------- My Computer ---------- */
 .explorer .content { min-height: 150px; }
@@ -369,7 +534,7 @@ details.start { flex: none; }
 .file b { display: block; font-size: 32px; font-weight: normal; }
 .file span { padding: 0 3px; }
 .file:focus-visible { outline: 0; }
-.file:focus-visible span, .file:active span { background: var(--purple); color: #fff; outline: 1px dotted #fff; }
+.file:focus-visible span, .file:active span { background: var(--select); color: #fff; outline: 1px dotted #fff; }
 
 /* ---------- Cat.exe ---------- */
 .catexe .content { display: flex; gap: 12px; align-items: center; background: var(--face); box-shadow: none; }
@@ -377,7 +542,7 @@ details.start { flex: none; }
 /* the picture with the coat swatches under it, and beside them the message and buttons, each centered in its column */
 .cat-side { flex: none; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 /* as wide as the row of four 18px swatches under it (with their 6px gaps) */
-.cat-pic { display: flex; justify-content: center; width: calc(4 * 18px + 3 * 6px); padding: 6px; background: #fff; box-shadow: var(--bevel-well); line-height: 0; }
+.cat-pic { display: flex; justify-content: center; width: calc(4 * 18px + 3 * 6px); padding: 6px; background: var(--paper); box-shadow: var(--bevel-well); line-height: 0; }
 .cat-pic canvas { width: 66px; height: 42px; image-rendering: pixelated; }
 .cat-coats { display: flex; gap: 6px; }
 .cat-main { flex: 1; text-align: center; }
@@ -443,7 +608,8 @@ details.start { flex: none; }
 /* very narrow screens: tighten the taskbar and drop the word "Start" */
 @media (max-width: 420px) {
 	.task, .tasks.icons-only .task { padding: 3px 8px; }
-	.tray { padding: 3px 6px; font-size: 11px; }
+	.tray { gap: 5px; padding: 3px 6px; font-size: 11px; }
+	details.themes summary { margin-left: -2px; }
 	details.start summary { padding: 3px 8px; }
 }
 @media (max-width: 340px) {

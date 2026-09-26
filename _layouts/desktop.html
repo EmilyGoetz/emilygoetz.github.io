@@ -22,6 +22,16 @@
 		<meta name="description" content="{{ page.description | default: site.description }}">
 		<link rel="canonical" href="{{ page.url | absolute_url }}">
 		<link rel="stylesheet" type="text/css" href="/style.css" />
+		<!-- the desktop theme picked last time (see the theme picker in script.js), put back before anything is drawn; until
+		     one's been picked, Dark for anyone whose system is in dark mode -->
+		<script>
+			(function () {
+				var t = null;
+				try { t = localStorage.getItem('theme'); } catch (e) {}
+				if (!t && window.matchMedia('(prefers-color-scheme: dark)').matches) t = 'dark';
+				if (t) document.documentElement.dataset.theme = t;
+			})();
+		</script>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<meta property="og:title" content="{{ page.title | default: 'Emily Goetz' }}">
 		<meta property="og:description" content="{{ page.description | default: site.description }}">
@@ -193,7 +203,7 @@
 
 		<div class="taskbar">
 			<details class="start" id="start">
-				<summary aria-label="Start">🌸 <span class="st">Start</span></summary>
+				<summary aria-label="Start"><span class="ico" aria-hidden="true"></span> <span class="st">Start</span></summary>
 				<ul>
 					<li class="has-sub">
 						<button type="button" aria-haspopup="true"><span class="ico">📂</span>Programs <span class="arr" aria-hidden="true">▸</span></button>
@@ -208,7 +218,16 @@
 				<button class="task" type="button" data-task="photo"{{ closed_task }} aria-label="photo.jpg"><span aria-hidden="true">🖼️</span><span class="lb" aria-hidden="true"> photo.jpg</span></button>
 				<button class="task" type="button" data-task="contact"{{ closed_task }} aria-label="Contact.exe"><span aria-hidden="true">📫</span><span class="lb" aria-hidden="true"> Contact.exe</span></button>
 			</div>
-			<div class="tray" id="clock">11:11 AM</div>
+			<div class="tray">
+				<details class="themes" id="themes" hidden>
+					<summary aria-label="Desktop theme" title="Desktop theme">🎨</summary>
+					<div class="theme-menu">
+						<div class="titlebar">🎨 Desktop Themes</div>
+						<div class="theme-list" role="group" aria-label="Desktop theme"></div>
+					</div>
+				</details>
+				<span id="clock">11:11 AM</span>
+			</div>
 		</div>
 
 		<script src="/script.js"></script>

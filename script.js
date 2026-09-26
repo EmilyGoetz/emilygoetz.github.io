@@ -287,10 +287,56 @@
 		off.querySelector('.crt').addEventListener('animationend', function () { off.remove(); });
 	}
 
-	/* start menu: close on outside click / Escape */
-	document.addEventListener('pointerdown', function (e) { if (!start.contains(e.target)) start.open = false; });
-	document.addEventListener('keydown', function (e) { if (e.key === 'Escape') start.open = false; });
+	/* start menu and theme picker: close on outside click / Escape */
+	var themePicker = document.getElementById('themes');
+	document.addEventListener('pointerdown', function (e) {
+		if (!start.contains(e.target)) start.open = false;
+		if (!themePicker.contains(e.target)) themePicker.open = false;
+	});
+	document.addEventListener('keydown', function (e) { if (e.key === 'Escape') start.open = themePicker.open = false; });
 	start.querySelector('summary').addEventListener('click', buzz);
+
+	/* desktop themes (their colors are in style.css; sparks are what the cursor trail sheds). The pick is remembered in this
+	   browser, and desktop.html puts it back on <html> before the page first paints. Until something's been picked, the
+	   desktop follows the system's light or dark mode, even if that changes while the page is open. */
+	var THEMES = [
+		{ id: 'blossom', name: 'Blossom', sparks: ['✨', '✦', '★', '♡'] },
+		{ id: 'classic', name: 'Classic', sparks: ['✦', '★', '✧'] },
+		{ id: 'strawberry', name: 'Strawberry Milk', sparks: ['♡', '🍓', '✿', '♡'] },
+		{ id: 'matcha', name: 'Matcha Latte', sparks: ['🍃', '✿', '❀', '🍵'] },
+		{ id: 'starlight', name: 'Starlight', sparks: ['★', '✦', '✧', '☾', '✨'] },
+		{ id: 'dark', name: 'Dark', sparks: ['✦', '✧', '·'] }
+	];
+	function themeById(id) { return THEMES.filter(function (t) { return t.id === id; })[0]; }
+	var theme = themeById(document.documentElement.dataset.theme) || THEMES[0], themeBtns;
+	function useTheme(t) {
+		theme = t;
+		document.documentElement.dataset.theme = t.id;
+		themeBtns.forEach(function (o, i) { o.setAttribute('aria-pressed', THEMES[i] === t); });
+	}
+	themeBtns = THEMES.map(function (t) {
+		var b = make('button', { 'class': 'theme-opt', type: 'button', 'aria-pressed': t === theme }, [
+			make('i', { 'class': 'theme-sample', 'data-theme': t.id, 'aria-hidden': 'true' }),
+			document.createTextNode(t.name)
+		]);
+		b.addEventListener('click', function () {
+			buzz();
+			useTheme(t);
+			try { localStorage.setItem('theme', t.id); } catch (e) {}
+		});
+		themePicker.querySelector('.theme-list').appendChild(b);
+		return b;
+	});
+	var darkMode = window.matchMedia('(prefers-color-scheme: dark)');
+	function followSystem(e) {
+		var picked = null;
+		try { picked = localStorage.getItem('theme'); } catch (err) {}
+		if (!picked) useTheme(themeById(e.matches ? 'dark' : 'blossom'));
+	}
+	if (darkMode.addEventListener) darkMode.addEventListener('change', followSystem);
+	else darkMode.addListener(followSystem); /* Safari before 14 only has the older name */
+	themePicker.querySelector('summary').addEventListener('click', buzz);
+	themePicker.hidden = false;
 
 	/* windows come to the front when pressed anywhere. A finger that lands on one to scroll the page doesn't count: on
 	   touch the window is raised when the finger lifts, and the browser cancels the touch instead when it becomes a
@@ -331,7 +377,7 @@
 		document.body.classList.remove('is-dragging');
 		drag = null;
 	}
-	document.querySelectorAll('.titlebar').forEach(function (bar) {
+	document.querySelectorAll('.win .titlebar').forEach(function (bar) {
 		bar.addEventListener('pointerdown', function (e) {
 			if (e.button !== 0 || e.target.closest('button')) return;
 			var w = bar.closest('.win');
@@ -1145,14 +1191,14 @@
 
 	/* sparkle cursor trail */
 	if (window.matchMedia('(pointer: fine)').matches && !reduce) {
-		var lastSpark = 0, glyphs = ['✨', '✦', '★', '♡'];
+		var lastSpark = 0;
 		document.addEventListener('mousemove', function (e) {
 			var now = Date.now();
 			if (now - lastSpark < 45) return;
 			lastSpark = now;
 			var s = document.createElement('span');
 			s.className = 'spark';
-			s.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+			s.textContent = theme.sparks[Math.floor(Math.random() * theme.sparks.length)];
 			s.style.left = e.clientX + 6 + 'px';
 			s.style.top = e.clientY + 6 + 'px';
 			document.body.appendChild(s);
