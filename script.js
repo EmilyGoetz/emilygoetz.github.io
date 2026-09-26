@@ -33,7 +33,7 @@
 			var id = w.dataset.win, d = w.dataset;
 			if (!w.querySelector('.titlebar')) {
 				var bar = make('div', { 'class': 'titlebar' }, [
-					document.createTextNode(d.icon + ' ' + (d.title || d.name)),
+					make('h2', { id: 'wt-' + id }, [make('span', { 'aria-hidden': 'true', text: d.icon }), document.createTextNode(' ' + (d.title || d.name))]),
 					make('span', { 'class': 'btns' }, [
 						make('button', { 'class': 'tb', type: 'button', 'data-min': id, 'aria-label': 'Minimize ' + d.name, text: '_' })
 					].concat('nomax' in d ? [] : [
@@ -43,14 +43,15 @@
 					]))
 				]);
 				w.insertBefore(bar, w.firstChild);
+				w.setAttribute('aria-labelledby', 'wt-' + id); /* named by its title */
 				if (d.menu) {
 					bar.after(make('div', { 'class': 'menubar' }, d.menu.split(',').map(function (m) { return make('span', { text: m }); })));
 				}
 			}
 			if (!document.querySelector('[data-task="' + id + '"]')) {
-				var task = make('button', { 'class': 'task', type: 'button', 'data-task': id, 'aria-label': d.name }, [
+				var task = make('button', { 'class': 'task', type: 'button', 'data-task': id, title: d.taskText || d.name }, [
 					make('span', { 'aria-hidden': 'true', text: d.icon }),
-					make('span', { 'class': 'lb', 'aria-hidden': 'true', text: ' ' + (d.taskText || d.name) })
+					make('span', { 'class': 'lb', text: ' ' + (d.taskText || d.name) })
 				]);
 				if (w.classList.contains('is-gone')) task.hidden = true;
 				taskStrip.appendChild(task);
@@ -88,20 +89,23 @@
 	function gone(w) { return w.classList.contains('is-gone'); }
 	function setActive(w) {
 		active = w;
-		ids.forEach(function (id) { tasks[id].classList.toggle('on', wins[id] === w); });
+		ids.forEach(function (id) {
+			tasks[id].classList.toggle('on', wins[id] === w);
+			tasks[id].setAttribute('aria-pressed', wins[id] === w);
+		});
 		syncUrl();
 		coverUp();
 	}
 	/* Whatever's behind a maximized window (the desktop icons, and the windows under it) can't be seen, so it's made inert
 	   too: out of reach for the keyboard and screen readers as well as the mouse. Windows brought in front of it aren't. */
-	var icons = document.querySelector('.icons');
+	var icons = document.querySelector('.icons'), skip = document.querySelector('.skip');
 	function coverUp() {
 		var top = null;
 		ids.forEach(function (id) {
 			var w = wins[id];
 			if (maxed(w) && !gone(w) && (!top || (+w.style.zIndex || 0) > (+top.style.zIndex || 0))) top = w;
 		});
-		icons.inert = !!top;
+		icons.inert = skip.inert = !!top; /* with the icons out of reach, there's nothing to skip */
 		ids.forEach(function (id) {
 			var w = wins[id];
 			w.inert = !!top && w !== top && (+w.style.zIndex || 0) < (+top.style.zIndex || 0);
@@ -141,6 +145,7 @@
 		/* closing (unlike minimizing) removes the taskbar button, even for a window that's already minimized */
 		if (kind === 'close' && !w.dataset.busy) tasks[id].hidden = true;
 		if (gone(w) || w.dataset.busy) return;
+		var hadFocus = w.contains(document.activeElement);
 		function finish() {
 			w.classList.add('is-gone');
 			if (kind === 'close') {
@@ -150,6 +155,12 @@
 			delete w.dataset.busy;
 			if (active === w) { var n = topVisible(); if (n) raise(n); else setActive(null); }
 			coverUp();
+			/* focus that was in it goes to its taskbar button (minimized), or the window now on top, or else Start */
+			if (hadFocus && !shutDown) {
+				if (kind === 'min') tasks[id].focus({ preventScroll: true });
+				else if (active) focusWin(active);
+				else start.querySelector('summary').focus({ preventScroll: true });
+			}
 		}
 		if (reduce) { finish(); return; }
 		w.dataset.busy = '1';
@@ -170,6 +181,12 @@
 	function focusIn(w) {
 		var f = w.querySelector('[data-autofocus]');
 		if (f) f.focus({ preventScroll: true }); /* the window is already brought into view by reveal() */
+		else focusWin(w);
+	}
+	/* a window is focusable only while the script puts focus on it; a click inside it never focuses it (see below) */
+	function focusWin(w) {
+		w.tabIndex = -1;
+		w.focus({ preventScroll: true });
 	}
 
 	/* A document window's text lives in its own page, which has the same window written out open: copy its content across.
@@ -399,6 +416,7 @@
 	ids.forEach(function (id) {
 		var w = wins[id], armed = null;
 		w.addEventListener('pointerdown', function (e) {
+			w.removeAttribute('tabindex'); /* so the click focuses what it lands on, or nothing, rather than the window */
 			if (w.dataset.busy) return;
 			if (e.pointerType === 'touch' && !e.target.closest('.titlebar, canvas')) { armed = e.pointerId; return; }
 			raise(w);
@@ -409,7 +427,30 @@
 			if (!w.dataset.busy) raise(w);
 		});
 		w.addEventListener('pointercancel', function (e) { if (armed === e.pointerId) armed = null; });
+		/* and when focus moves into them, so it's never on something covered by another window */
+		w.addEventListener('focusin', function () { if (w !== active && !w.dataset.busy) raise(w); });
 	});
+
+	/* text that scrolls inside a window can be tabbed to (and scrolled with the arrow keys) while it overflows, which
+	   Safari doesn't do by itself; checked as Tab is pressed, since windows resize and content loads */
+	var scrollers = document.querySelectorAll('.win .content, .ctg-out');
+	document.addEventListener('keydown', function (e) {
+		if (e.key !== 'Tab') return;
+		scrollers.forEach(function (s) {
+			var over = s.scrollHeight > s.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(s).overflowY);
+			if (over) s.tabIndex = 0; else s.removeAttribute('tabindex');
+		});
+	}, true);
+
+	/* the skip link focuses the windows without adding #windows to the address; like a window, they're only focusable
+	   while that focus lasts, so a click on them never lands focus there */
+	var main = document.getElementById('windows');
+	skip.addEventListener('click', function (e) {
+		e.preventDefault();
+		main.tabIndex = -1;
+		main.focus();
+	});
+	main.addEventListener('focusout', function (e) { if (e.target === main) main.removeAttribute('tabindex'); });
 
 	/* dragging by the title bar */
 	var drag = null;
@@ -476,12 +517,15 @@
 	routed = true;
 	syncUrl();
 
-	/* start menu: Programs flyout (click for touch, hover/focus handled in CSS) */
+	/* start menu: Programs flyout (click, tap or Enter; hover is handled in CSS) */
 	document.querySelectorAll('#start li.has-sub > button').forEach(function (b) {
-		b.addEventListener('click', function () { buzz(); b.parentElement.classList.toggle('open'); });
+		b.addEventListener('click', function () { buzz(); b.setAttribute('aria-expanded', b.parentElement.classList.toggle('open')); });
 	});
 	start.addEventListener('toggle', function () {
-		if (!start.open) start.querySelectorAll('li.has-sub.open').forEach(function (li) { li.classList.remove('open'); });
+		if (!start.open) start.querySelectorAll('li.has-sub.open').forEach(function (li) {
+			li.classList.remove('open');
+			li.firstElementChild.setAttribute('aria-expanded', false);
+		});
 	});
 
 	/* paint */
@@ -635,6 +679,7 @@
 	/* cool text generator */
 	(function () {
 		var input = document.getElementById('ctInput'), out = document.getElementById('ctOut'), count = document.getElementById('ctCount');
+		var copied = document.getElementById('ctCopied'); /* tells screen readers a copy worked */
 		var chars = function (s) { return Array.from(s); };
 		function swap(map, s) { return chars(s).map(function (c) { return map[c] !== undefined ? map[c] : c; }).join(''); }
 		function cp(n) { return String.fromCodePoint(n); }
@@ -728,8 +773,9 @@
 				buzz();
 				navigator.clipboard.writeText(text.textContent).then(function () {
 					cue.textContent = 'Copied!';
+					copied.textContent = 'Copied ' + st[0];
 					clearTimeout(timer);
-					timer = setTimeout(function () { cue.textContent = 'Copy'; }, 1200);
+					timer = setTimeout(function () { cue.textContent = 'Copy'; copied.textContent = ''; }, 1200);
 				}, function () {});
 			});
 			out.appendChild(b);

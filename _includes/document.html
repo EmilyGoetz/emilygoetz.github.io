@@ -10,9 +10,9 @@
 {%- assign id = doc.app -%}
 {%- if id == nil %}{% assign id = doc.url | slugify %}{% endif -%}
 {%- if doc.url == page.url %}{% assign here = true %}{% else %}{% assign here = false %}{% endif -%}
-<section class="win notepad popup scroll{% unless here %} is-gone{% endunless %}" {% include window-attrs.html page=doc %} data-file{% unless here %} data-src="{{ doc.url }}"{% endunless %}>
+<section class="win notepad popup scroll{% unless here %} is-gone{% endunless %}" {% include window-attrs.html page=doc %} {% if here %}aria-labelledby="wt-{{ id }}" {% endif %}data-file{% unless here %} data-src="{{ doc.url }}"{% endunless %}>
 	{%- if here %}
-	<div class="titlebar">{{ w.icon }} {{ w.title | default: w.name }}
+	<div class="titlebar"><h2 id="wt-{{ id }}"><span aria-hidden="true">{{ w.icon }}</span> {{ w.title | default: w.name }}</h2>
 		<span class="btns">
 			<button class="tb" type="button" data-min="{{ id }}" aria-label="Minimize {{ w.name }}">_</button>
 			<button class="tb" type="button" data-max="{{ id }}" aria-label="Maximize {{ w.name }}">□</button>

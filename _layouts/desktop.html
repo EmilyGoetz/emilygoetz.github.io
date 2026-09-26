@@ -33,6 +33,7 @@
 			})();
 		</script>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="me" href="https://mas.to/@_emily">
 		<meta property="og:title" content="{{ page.title | default: 'Emily Goetz' }}">
 		<meta property="og:description" content="{{ page.description | default: site.description }}">
 		<meta property="og:url" content="{{ page.url | absolute_url }}">
@@ -44,22 +45,25 @@
 	<body data-app="{{ app }}" data-home-title="{{ site.title }}">
 		{%- comment -%} a window's own page (/paint/) opens with only that window, so the ones the home page starts with are closed {%- endcomment -%}
 		{%- if app %}{% assign closed = " is-gone" %}{% assign closed_task = " hidden" %}{% endif %}
-		{%- comment -%} a page's description, for screen readers and search engines (a document's page shows its text in its window instead) {%- endcomment -%}
-		{%- if content != "" and page.layout != "document" %}
-		<div class="sr-only">{{ content }}</div>
-		{%- endif %}
-		<div class="icons">
+		<a class="skip" href="#windows">Skip to windows</a>
+		<header class="sr-only"><h1>{{ doc_title }}</h1></header>
+		<nav class="icons" aria-labelledby="icons-h">
+			<h2 class="sr-only" id="icons-h">Desktop icons</h2>
 			<button class="icon" type="button" data-open="computer"><b>🖥️</b><span>My Computer</span></button>
 			<div class="icon deco" aria-hidden="true"><b>🗑️</b><span>Recycle Bin</span></div>
 			<button class="icon" type="button" data-open="about"><b>📝</b><span>About Me.txt</span></button>
 			<button class="icon" type="button" data-open="photo"><b>🖼️</b><span>photo.jpg</span></button>
 			<button class="icon" type="button" data-open="contact"><b>📫</b><span>Contact.exe</span></button>
-		</div>
+		</nav>
 
-		<div class="windows">
+		<main class="windows" id="windows">
+			{%- comment -%} a page's description, for screen readers and search engines (a document's page shows its text in its window instead) {%- endcomment -%}
+			{%- if content != "" and page.layout != "document" %}
+			<div class="sr-only">{{ content }}</div>
+			{%- endif %}
 			<div class="col">
-				<section class="win notepad scroll{{ closed }}" data-win="about" data-icon="📝" data-name="About Me.txt" data-file data-start="menu">
-					<div class="titlebar">📝 About Me.txt - Notepad
+				<section class="win notepad scroll{{ closed }}" data-win="about" aria-labelledby="wt-about" data-icon="📝" data-name="About Me.txt" data-file data-start="menu">
+					<div class="titlebar"><h2 id="wt-about"><span aria-hidden="true">📝</span> About Me.txt - Notepad</h2>
 						<span class="btns">
 							<button class="tb" type="button" data-min="about" aria-label="Minimize About Me.txt">_</button>
 							<button class="tb" type="button" data-max="about" aria-label="Maximize About Me.txt">□</button>
@@ -83,8 +87,8 @@
 			</div>
 
 			<div class="col r">
-				<section class="win photo{{ closed }}" data-win="photo" data-icon="🖼️" data-name="photo.jpg" data-file data-start="menu">
-					<div class="titlebar">🖼️ photo.jpg - Image Viewer
+				<section class="win photo{{ closed }}" data-win="photo" aria-labelledby="wt-photo" data-icon="🖼️" data-name="photo.jpg" data-file data-start="menu">
+					<div class="titlebar"><h2 id="wt-photo"><span aria-hidden="true">🖼️</span> photo.jpg - Image Viewer</h2>
 						<span class="btns">
 							<button class="tb" type="button" data-min="photo" aria-label="Minimize photo.jpg">_</button>
 							<button class="tb" type="button" data-max="photo" aria-label="Maximize photo.jpg">□</button>
@@ -95,8 +99,8 @@
 					<div class="status"><span>1080 × 1080</span><span>275 KB</span></div>
 				</section>
 
-				<section class="win contact{{ closed }}" data-win="contact" data-icon="📫" data-name="Contact.exe" data-file data-start="menu">
-					<div class="titlebar">📫 Contact.exe
+				<section class="win contact{{ closed }}" data-win="contact" aria-labelledby="wt-contact" data-icon="📫" data-name="Contact.exe" data-file data-start="menu">
+					<div class="titlebar"><h2 id="wt-contact"><span aria-hidden="true">📫</span> Contact.exe</h2>
 						<span class="btns">
 							<button class="tb" type="button" data-close="contact" aria-label="Close Contact.exe">×</button>
 						</span>
@@ -108,104 +112,105 @@
 					</div>
 				</section>
 			</div>
-		</div>
 
-		{%- if page.needs_js %}
+			{%- if page.needs_js %}
 
-		<noscript>
-			<section class="win contact popup nojs" style="--w: 340px; --hh: 90px">
-				<div class="titlebar">⚠️ {{ page.title }}</div>
+			<noscript>
+				<section class="win contact popup nojs" style="--w: 340px; --hh: 90px">
+					<div class="titlebar"><h2><span aria-hidden="true">⚠️</span> {{ page.title }}</h2></div>
+					<div class="content">
+						<p>{{ page.title }} needs JavaScript to run. Turn it on, then press OK to open it.</p>
+						<div class="dlg-btns"><a href="{{ page.url }}">OK</a></div>
+					</div>
+				</section>
+			</noscript>
+			{%- endif %}
+
+			<!-- Windows that start closed: script.js builds their title bar, taskbar button and Start / My Computer entries from the data-* attributes.
+			     A program with its own page takes them from that page's front matter (see _includes/window-attrs.html). -->
+			<!-- Paint -->
+			{%- assign program = site.pages | where: "app", "paint" | first %}
+			<section class="win paint popup is-gone" {% include window-attrs.html page=program %}>
 				<div class="content">
-					<p>{{ page.title }} needs JavaScript to run. Turn it on, then press OK to open it.</p>
-					<div class="dlg-btns"><a href="{{ page.url }}">OK</a></div>
+					<div class="pnt-tools" role="toolbar" aria-label="Paint tools">
+						<button class="pt on" type="button" data-tool="pencil" aria-label="Pencil" title="Pencil" aria-pressed="true">✏️</button>
+						<button class="pt" type="button" data-tool="brush" aria-label="Brush" title="Brush" aria-pressed="false">🖌️</button>
+						<button class="pt" type="button" data-tool="spray" aria-label="Spray can" title="Spray can" aria-pressed="false">💨</button>
+						<button class="pt" type="button" data-tool="eraser" aria-label="Eraser" title="Eraser" aria-pressed="false">🧽</button>
+						<button class="pt" type="button" id="pUndo" aria-label="Undo" title="Undo"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7 2.5 3.5 5.5 7 8.5M4 5.5h6a3.5 3.5 0 0 1 0 7H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+						<button class="pt" type="button" id="pClear" aria-label="Clear" title="Clear">🗑️</button>
+						<span class="sep"></span>
+						<button class="pt" type="button" data-stamp="🐕" aria-label="Dog stamp" aria-pressed="false">🐕</button>
+						<button class="pt" type="button" data-stamp="🪴" aria-label="Plant stamp" aria-pressed="false">🪴</button>
+						<button class="pt" type="button" data-stamp="🥁" aria-label="Drum stamp" aria-pressed="false">🥁</button>
+						<button class="pt" type="button" data-stamp="🎮" aria-label="Controller stamp" aria-pressed="false">🎮</button>
+						<button class="pt" type="button" data-stamp="✈️" aria-label="Airplane stamp" aria-pressed="false">✈️</button>
+						<button class="pt" type="button" data-stamp="🎶" aria-label="Music stamp" aria-pressed="false">🎶</button>
+						<button class="pt" type="button" data-stamp="✨" aria-label="Sparkle stamp" aria-pressed="false">✨</button>
+						<button class="pt" type="button" data-stamp="💖" aria-label="Heart stamp" aria-pressed="false">💖</button>
+					</div>
+					<div class="pnt-main">
+						<div class="pnt-canvas"><canvas id="pCanvas" width="400" height="260" role="img" aria-label="Drawing canvas: draw with the mouse or your finger"></canvas></div>
+						<div class="pnt-pal"><span class="pnt-cur"><i id="pCur"></i></span><div class="pnt-sw" id="pSwatches"></div></div>
+					</div>
 				</div>
+				<div class="status"><span id="pPos">&nbsp;</span><span>Draw something nice ♡</span></div>
 			</section>
-		</noscript>
-		{%- endif %}
 
-		<!-- Windows that start closed: script.js builds their title bar, taskbar button and Start / My Computer entries from the data-* attributes.
-		     A program with its own page takes them from that page's front matter (see _includes/window-attrs.html). -->
-		<!-- Paint -->
-		{%- assign program = site.pages | where: "app", "paint" | first %}
-		<section class="win paint popup is-gone" {% include window-attrs.html page=program %}>
-			<div class="content">
-				<div class="pnt-tools" role="toolbar" aria-label="Paint tools">
-					<button class="pt on" type="button" data-tool="pencil" aria-label="Pencil" title="Pencil" aria-pressed="true">✏️</button>
-					<button class="pt" type="button" data-tool="brush" aria-label="Brush" title="Brush" aria-pressed="false">🖌️</button>
-					<button class="pt" type="button" data-tool="spray" aria-label="Spray can" title="Spray can" aria-pressed="false">💨</button>
-					<button class="pt" type="button" data-tool="eraser" aria-label="Eraser" title="Eraser" aria-pressed="false">🧽</button>
-					<button class="pt" type="button" id="pUndo" aria-label="Undo" title="Undo"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M7 2.5 3.5 5.5 7 8.5M4 5.5h6a3.5 3.5 0 0 1 0 7H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-					<button class="pt" type="button" id="pClear" aria-label="Clear" title="Clear">🗑️</button>
-					<span class="sep"></span>
-					<button class="pt" type="button" data-stamp="🐕" aria-label="Dog stamp" aria-pressed="false">🐕</button>
-					<button class="pt" type="button" data-stamp="🪴" aria-label="Plant stamp" aria-pressed="false">🪴</button>
-					<button class="pt" type="button" data-stamp="🥁" aria-label="Drum stamp" aria-pressed="false">🥁</button>
-					<button class="pt" type="button" data-stamp="🎮" aria-label="Controller stamp" aria-pressed="false">🎮</button>
-					<button class="pt" type="button" data-stamp="✈️" aria-label="Airplane stamp" aria-pressed="false">✈️</button>
-					<button class="pt" type="button" data-stamp="🎶" aria-label="Music stamp" aria-pressed="false">🎶</button>
-					<button class="pt" type="button" data-stamp="✨" aria-label="Sparkle stamp" aria-pressed="false">✨</button>
-					<button class="pt" type="button" data-stamp="💖" aria-label="Heart stamp" aria-pressed="false">💖</button>
+			<!-- Cool Text Generator -->
+			{%- assign program = site.pages | where: "app", "cooltext" | first %}
+			<section class="win ctg popup scroll is-gone" {% include window-attrs.html page=program %}>
+				<div class="content">
+					<textarea id="ctInput" data-autofocus maxlength="250" rows="3" spellcheck="false" autocomplete="off" aria-label="Text to convert"></textarea>
+					<div class="ctg-out empty" id="ctOut">
+						<p class="ctg-hint">Type something above ✨</p>
+					</div>
 				</div>
-				<div class="pnt-main">
-					<div class="pnt-canvas"><canvas id="pCanvas" width="400" height="260" role="img" aria-label="Drawing canvas: draw with the mouse or your finger"></canvas></div>
-					<div class="pnt-pal"><span class="pnt-cur"><i id="pCur"></i></span><div class="pnt-sw" id="pSwatches"></div></div>
+				<div class="status"><span id="ctCount">&nbsp;</span><span>Click a style to copy it</span></div>
+				<p class="sr-only" id="ctCopied" role="status"></p>
+			</section>
+
+			<!-- Cat.exe (the cat itself is drawn by script.js) -->
+			{%- assign program = site.pages | where: "app", "cat" | first %}
+			<section class="win catexe popup is-gone" {% include window-attrs.html page=program %} data-nomax>
+				<div class="content">
+					<div class="cat-side">
+						<div class="cat-pic"><canvas id="catPic" width="22" height="14" role="img" aria-label="Your cat"></canvas></div>
+						<div class="cat-coats" id="catCoats" role="group" aria-label="Coat"></div>
+					</div>
+					<div class="cat-main">
+						<p class="cat-says" id="catSays" aria-hidden="true">
+							<span data-say="out" class="on">Your cat is out on the desktop. Drag it around, or give it a pat.</span>
+							<span data-say="nap">Your cat went home for a nap.</span>
+						</p>
+						<p class="sr-only" id="catSaysLive" role="status">Your cat is out on the desktop. Drag it around, or give it a pat.</p>
+						<div class="dlg-btns"><button type="button" id="catCall">Call cat</button><button type="button" id="catHome">Send home</button></div>
+					</div>
 				</div>
-			</div>
-			<div class="status"><span id="pPos">&nbsp;</span><span>Draw something nice ♡</span></div>
-		</section>
+				<div class="status"><span id="catStatus">&nbsp;</span><span>Cat.exe</span></div>
+			</section>
 
-		<!-- Cool Text Generator -->
-		{%- assign program = site.pages | where: "app", "cooltext" | first %}
-		<section class="win ctg popup scroll is-gone" {% include window-attrs.html page=program %}>
-			<div class="content">
-				<textarea id="ctInput" data-autofocus maxlength="250" rows="3" spellcheck="false" autocomplete="off" aria-label="Text to convert"></textarea>
-				<div class="ctg-out empty" id="ctOut">
-					<p class="ctg-hint">Type something above ✨</p>
+			<!-- My Computer -->
+			<section class="win explorer popup is-gone" style="--w: 380px; --hh: 150px; --dx: -70px" data-win="computer" data-icon="🖥️" data-name="My Computer" data-menu="File,Edit,View,Help">
+				<div class="content">
+					<div class="files"></div>
 				</div>
-			</div>
-			<div class="status"><span id="ctCount">&nbsp;</span><span>Click a style to copy it</span></div>
-		</section>
+				<div class="status"><span data-file-count></span><span>My Computer</span></div>
+			</section>
 
-		<!-- Cat.exe (the cat itself is drawn by script.js) -->
-		{%- assign program = site.pages | where: "app", "cat" | first %}
-		<section class="win catexe popup is-gone" {% include window-attrs.html page=program %} data-nomax>
-			<div class="content">
-				<div class="cat-side">
-					<div class="cat-pic"><canvas id="catPic" width="22" height="14" role="img" aria-label="Your cat"></canvas></div>
-					<div class="cat-coats" id="catCoats" role="group" aria-label="Coat"></div>
-				</div>
-				<div class="cat-main">
-					<p class="cat-says" id="catSays" aria-hidden="true">
-						<span data-say="out" class="on">Your cat is out on the desktop. Drag it around, or give it a pat.</span>
-						<span data-say="nap">Your cat went home for a nap.</span>
-					</p>
-					<p class="sr-only" id="catSaysLive" role="status">Your cat is out on the desktop. Drag it around, or give it a pat.</p>
-					<div class="dlg-btns"><button type="button" id="catCall">Call cat</button><button type="button" id="catHome">Send home</button></div>
-				</div>
-			</div>
-			<div class="status"><span id="catStatus">&nbsp;</span><span>Cat.exe</span></div>
-		</section>
+			<!-- Documents: every page with `layout: document` (see _includes/document.html) -->
+			{%- assign documents = site.pages | where: "layout", "document" %}
+			{%- for doc in documents %}
+			{% include document.html doc=doc %}
+			{%- endfor %}
+		</main>
 
-		<!-- My Computer -->
-		<section class="win explorer popup is-gone" style="--w: 380px; --hh: 150px; --dx: -70px" data-win="computer" data-icon="🖥️" data-name="My Computer" data-menu="File,Edit,View,Help">
-			<div class="content">
-				<div class="files"></div>
-			</div>
-			<div class="status"><span data-file-count></span><span>My Computer</span></div>
-		</section>
-
-		<!-- Documents: every page with `layout: document` (see _includes/document.html) -->
-		{%- assign documents = site.pages | where: "layout", "document" %}
-		{%- for doc in documents %}
-		{% include document.html doc=doc %}
-		{%- endfor %}
-
-		<div class="taskbar">
+		<nav class="taskbar" aria-label="Taskbar">
 			<details class="start" id="start">
-				<summary aria-label="Start"><span class="ico" aria-hidden="true"></span> <span class="st">Start</span></summary>
+				<summary><span class="ico" aria-hidden="true"></span> <span class="st">Start</span></summary>
 				<ul>
 					<li class="has-sub">
-						<button type="button" aria-haspopup="true"><span class="ico">📂</span>Programs <span class="arr" aria-hidden="true">▸</span></button>
+						<button type="button" aria-haspopup="true" aria-expanded="false"><span class="ico">📂</span>Programs <span class="arr" aria-hidden="true">▸</span></button>
 						<ul class="sub"></ul>
 					</li>
 					<li class="sep" role="separator"></li>
@@ -213,29 +218,27 @@
 				</ul>
 			</details>
 			<div class="tasks">
-				<button class="task{% unless app %} on{% endunless %}" type="button" data-task="about"{{ closed_task }} aria-label="About Me.txt"><span aria-hidden="true">📝</span><span class="lb" aria-hidden="true"> About Me.txt</span></button>
-				<button class="task" type="button" data-task="photo"{{ closed_task }} aria-label="photo.jpg"><span aria-hidden="true">🖼️</span><span class="lb" aria-hidden="true"> photo.jpg</span></button>
-				<button class="task" type="button" data-task="contact"{{ closed_task }} aria-label="Contact.exe"><span aria-hidden="true">📫</span><span class="lb" aria-hidden="true"> Contact.exe</span></button>
+				<button class="task{% unless app %} on{% endunless %}" type="button" data-task="about"{{ closed_task }} title="About Me.txt"><span aria-hidden="true">📝</span><span class="lb"> About Me.txt</span></button>
+				<button class="task" type="button" data-task="photo"{{ closed_task }} title="photo.jpg"><span aria-hidden="true">🖼️</span><span class="lb"> photo.jpg</span></button>
+				<button class="task" type="button" data-task="contact"{{ closed_task }} title="Contact.exe"><span aria-hidden="true">📫</span><span class="lb"> Contact.exe</span></button>
 			</div>
 			<div class="tray">
 				<details class="themes" id="themes" hidden>
-					<summary aria-label="Desktop theme" title="Desktop theme">🎨</summary>
+					<summary title="Desktop Themes"><span aria-hidden="true">🎨</span><span class="sr-only">Desktop Themes</span></summary>
 					<div class="theme-menu">
 						<div class="titlebar">🎨 Desktop Themes</div>
-						<div class="theme-list" role="group" aria-label="Desktop theme"></div>
+						<div class="theme-list" role="group" aria-label="Desktop Themes"></div>
 					</div>
 				</details>
 				<span id="clock">11:11 AM</span>
 			</div>
-		</div>
+		</nav>
 
 		<script src="/script.js"></script>
 
 		<div style="display:none">
 			<!-- Start: Copyright 2020 IPnoid.com Service Code (030758-11182020)- DO NOT MODIFY //-->
 			<div style="line-height:16px;text-align:center;"><script type="text/javascript" src="//www.ipnoid.com/tracker/lgUrl.php?stlVar2=1207&amp;rgtype=4684NR-IPIB&amp;pidnVar2=21969&amp;prtVar2=1&amp;scvVar2=12"></script><noscript><a title="IPnoid" href="https://www.ipnoid.com/"><img src="//www.ipnoid.com/tracker/1207/4684NR-IPIB/21969/1/12/ans/" alt="IPnoid" style="border:0px;"></a></noscript></div> <!-- End: IPnoid.com Service Code //-->
-
-			<a rel="me" href="https://mas.to/@_emily" />
 		</div>
 	</body>
 </html>

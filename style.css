@@ -19,6 +19,7 @@
 	--title-b: #a98cf0;
 	--accent: #c73d86; /* links in the text windows: deep enough to read as text on white */
 	--select: #7b4fa3; /* a selected icon's label */
+	--select-ink: var(--select); /* the same color as text (Cool Text's style names) */
 	--desktop: #8fdccd;
 	--wallpaper: radial-gradient(circle, rgba(255, 255, 255, .45) 1px, transparent 1.6px) 0 0 / 14px 14px, var(--desktop);
 	--mat: #d8cbe6;
@@ -28,15 +29,16 @@
 	--paper: #fff; /* inside text boxes and documents */
 	--hi: #fff; /* the lit edge of a bevel */
 	--edge: var(--ink); /* the shadowed edge of a bevel, and outlines */
-	--hint: var(--face-d); /* placeholder text on --paper */
+	--hint: #826aa4; /* placeholder text on --paper */
 	--shadow: rgba(58, 47, 74, .3); /* drop shadows: --edge at 30%, written out (color-mix() is too new for some older iPhones) */
-	--icon-ink: #fff; /* desktop icon labels (every theme gets these unless it sets its own) */
-	--icon-halo: 1px 1px 0 var(--edge);
+	--icon-ink: var(--ink); /* desktop icon labels (every theme gets these unless it sets its own) */
+	--icon-halo: 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff;
 }
 [data-theme="classic"] {
 	--face: #c0c0c0;
 	--face-l: #dfdfdf;
 	--face-d: #808080;
+	--hint: #757575;
 	--ink: #000;
 	--shadow: rgba(0, 0, 0, .3);
 	--title-a: #000080;
@@ -62,6 +64,7 @@
 	--face: #fff0f2;
 	--face-l: #fff8f9;
 	--face-d: #de9aa8;
+	--hint: #c44b64;
 	--ink: #5a2833;
 	--shadow: rgba(90, 40, 51, .3);
 	--title-a: #ff5c7c;
@@ -77,20 +80,18 @@
 	--link: #c2185b;
 	--link-visited: #8e2a6b;
 	--start-ico: "🍓";
-	/* white labels get lost in the gingham, so they're dark with a white glow instead */
-	--icon-ink: var(--ink);
-	--icon-halo: 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff;
 }
 [data-theme="matcha"] {
 	--face: #f3eedc;
 	--face-l: #faf7ec;
 	--face-d: #a89e78;
+	--hint: #7e7451;
 	--ink: #3a3a28;
 	--shadow: rgba(58, 58, 40, .3);
 	--title-a: #5f8f3e;
 	--title-b: #b8cf78;
 	--accent: #4a7a26;
-	--select: #5f8f3e;
+	--select: #537d36;
 	--desktop: #a3bf7f;
 	--wallpaper:
 		linear-gradient(rgba(250, 247, 236, .28) 1px, transparent 1px) 0 0 / 18px 18px,
@@ -105,6 +106,7 @@
 	--face: #e6e2f6;
 	--face-l: #f3f1fb;
 	--face-d: #8580b0;
+	--hint: #746fa5;
 	--ink: #23203f;
 	--shadow: rgba(35, 32, 63, .3);
 	--title-a: #3a3a9e;
@@ -127,6 +129,8 @@
 	--link: #3d36b8;
 	--link-visited: #8e3a9e;
 	--start-ico: "🌙";
+	--icon-ink: #fff; /* white labels on the dark wallpaper */
+	--icon-halo: 1px 1px 0 var(--edge);
 }
 [data-theme="notebook"] {
 	--face: #f4f1e8;
@@ -153,9 +157,6 @@
 	--link: #2f4fa8;
 	--link-visited: #7a3f9e;
 	--start-ico: "📓";
-	/* white labels would vanish on the paper, so they're written in pen */
-	--icon-ink: var(--ink);
-	--icon-halo: 0 0 2px var(--desktop), 0 0 3px var(--desktop);
 }
 [data-theme="dark"] {
 	color-scheme: dark; /* scrollbars and text boxes follow */
@@ -172,12 +173,15 @@
 	--title-b: #8a5f9e;
 	--accent: #ff9fd0;
 	--select: #7a5cb8;
+	--select-ink: #aa97d2; /* --select is too dark to read on --paper here */
 	--desktop: #17161d;
 	--wallpaper: radial-gradient(circle, rgba(255, 255, 255, .07) 1px, transparent 1.6px) 0 0 / 14px 14px, var(--desktop);
 	--mat: #2d2a35;
 	--link: #b3a8ff;
 	--link-visited: #e8a0d4;
 	--start-ico: "🔮";
+	--icon-ink: #fff; /* white labels on the dark wallpaper */
+	--icon-halo: 1px 1px 0 var(--edge);
 }
 
 :root {
@@ -221,6 +225,15 @@
 	white-space: nowrap;
 }
 
+/* skip link: hidden until it's tabbed to */
+.skip, .skip:visited {
+	position: absolute; top: 6px; left: 6px; z-index: var(--z-menus); padding: 4px 10px;
+	color: var(--ink); background: var(--face); box-shadow: var(--bevel-out);
+	transform: translateY(-200%);
+}
+.skip:focus { transform: none; outline: 1px dotted var(--ink); outline-offset: -4px; }
+#windows:focus { outline: 0; }
+
 /* Whatever is dragged past the right edge must not widen the page: mobile browsers answer that by zooming out or
    panning, which carries the fixed taskbar out of view. The body is positioned, so the floating windows are clipped
    with it, and it clips sideways without becoming a scroll container (hidden first, for browsers without clip). */
@@ -255,7 +268,7 @@ a:visited { color: var(--link-visited); }
 .icon span { padding: 0 3px; }
 button.icon { cursor: pointer; }
 button.icon:focus-visible { outline: 0; }
-/* a selected label is the usual white on the highlight, even in a theme whose labels are otherwise dark (Strawberry Milk) */
+/* a selected label is white on the highlight, even where labels are otherwise dark */
 button.icon:focus-visible span, button.icon:active span { background: var(--select); color: #fff; text-shadow: 1px 1px 0 var(--edge); outline: 1px dotted #fff; }
 
 /* ---------- windows ---------- */
@@ -276,6 +289,8 @@ button.icon:focus-visible span, button.icon:active span { background: var(--sele
 	box-shadow: var(--bevel-win), 5px 5px 0 var(--shadow);
 }
 .win.dragging { box-shadow: var(--bevel-win), 10px 12px 0 var(--shadow); }
+.win:focus-visible { outline: 1px dotted var(--ink); outline-offset: 2px; }
+.win .content:focus-visible, .ctg-out:focus-visible { outline: 1px dotted var(--ink); outline-offset: -4px; }
 /* hidden windows keep their place in the layout, so nothing shifts when others come and go */
 .win.is-gone { visibility: hidden; pointer-events: none; }
 
@@ -287,6 +302,7 @@ button.icon:focus-visible span, button.icon:active span { background: var(--sele
 	cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
 }
 .win.dragging .titlebar { cursor: grabbing; }
+.titlebar h2 { margin: 0; font: inherit; }
 .titlebar .btns { margin-left: auto; display: flex; gap: 2px; }
 .tb {
 	width: 16px; height: 14px; padding: 0; border: 0; text-align: center; font: bold 9px/14px Tahoma, sans-serif; color: var(--ink);
@@ -433,21 +449,21 @@ details.start li.has-sub > button .arr { float: right; }
 /* anchored at the bottom so it grows upward from the Programs row, like the Start menu itself */
 details.start ul.sub { display: none; top: auto; bottom: -3px; left: 100%; margin: 0; min-width: 130px; white-space: nowrap; }
 details.start li.has-sub:hover > ul.sub,
-details.start li.has-sub:focus-within > ul.sub,
 details.start li.has-sub.open > ul.sub { display: block; }
 
 /* the button strip can shrink and, as a last resort on very narrow screens, scroll instead of running under the clock */
 .tasks { display: flex; gap: 4px; min-width: 0; padding: 0 3px 0 0; overflow-x: auto; scrollbar-width: none; }
 .tasks::-webkit-scrollbar { display: none; }
 .task {
-	padding: 3px 10px; border: 0; white-space: nowrap; font: inherit; color: var(--ink); cursor: pointer; background: var(--face);
+	position: relative; padding: 3px 10px; border: 0; white-space: nowrap; font: inherit; color: var(--ink); cursor: pointer; background: var(--face);
 	box-shadow: var(--bevel-out);
 }
 .task.on { box-shadow: var(--bevel-in); background: var(--face-l); font-weight: bold; }
 .task:focus-visible { outline: 1px dotted var(--ink); outline-offset: -4px; }
 .task[hidden] { display: none; }
-/* script.js adds .icons-only when the buttons' names wouldn't all fit, leaving just the icons (a bit bigger, to be easy to tap) */
-.tasks.icons-only .task .lb { display: none; }
+/* script.js adds .icons-only when the buttons' names wouldn't all fit, leaving just the icons (a bit bigger, to be easy to tap);
+   the names stay for screen readers, hidden the same way as .sr-only */
+.tasks.icons-only .task .lb { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .tasks.icons-only .task { flex: none; padding: 3px 12px; font-size: 14px; }
 .tray { position: relative; flex: none; display: flex; align-items: center; gap: 7px; margin-left: auto; padding: 3px 10px; white-space: nowrap; box-shadow: var(--bevel-soft); }
 details.start summary .ico::before { content: var(--start-ico); }
@@ -572,7 +588,7 @@ html:has(.win.maxed:not(.is-gone)) { overflow: hidden; }
 	display: block; width: 100%; padding: 5px 8px 6px; border: 0; border-bottom: 1px solid var(--face); background: none;
 	text-align: left; font: inherit; color: var(--ink); cursor: pointer;
 }
-.ctg-row small { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; color: var(--select); }
+.ctg-row small { display: flex; justify-content: space-between; gap: 8px; font-size: 10px; color: var(--select-ink); }
 .ctg-row .tx { display: block; font-size: 15px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .ctg-row:hover, .ctg-row:focus-visible { background: var(--face-l); outline: 0; }
 .ctg-row:focus-visible { box-shadow: inset 0 0 0 1px var(--ink); }
@@ -688,7 +704,7 @@ html:has(.win.maxed:not(.is-gone)) { overflow: hidden; }
 	details.start summary { padding: 3px 8px; }
 }
 @media (max-width: 340px) {
-	details.start summary .st { display: none; }
+	details.start summary .st { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } /* still read out */
 }
 
 @media (prefers-reduced-motion: reduce) {
