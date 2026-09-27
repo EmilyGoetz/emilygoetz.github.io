@@ -375,6 +375,11 @@ button.tb:focus-visible { outline: 1px dotted var(--ink); outline-offset: -3px; 
 .win.closing    { animation: crt-off .36s ease-in forwards; pointer-events: none; }
 .win.restoring  { animation: from-taskbar .45s cubic-bezier(.2, 1.25, .4, 1) both; }
 .win.bump       { animation: bump .28s ease-out; }
+/* maximizing and restoring: from its old box (script.js sets --zx/--zy/--zw/--zh) to its new one */
+@keyframes zoom-from {
+	from { transform: translate(var(--zx), var(--zy)) scale(var(--zw), var(--zh)); }
+}
+.win.zooming    { transform-origin: 0 0; animation: zoom-from .4s cubic-bezier(.2, 1.25, .4, 1) both; }
 
 /* Shut Down: the screen switches off like the windows do. .crt is a hole in a sea of black (its huge shadow) that the
    real desktop shows through, so it's the desktop itself that squeezes to a bright line and then a dot */

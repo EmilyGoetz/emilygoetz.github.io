@@ -276,7 +276,19 @@
 	function toggleMax(w) {
 		if (w.dataset.busy || !w.querySelector('[data-max]')) return;
 		raise(w);
+		if (reduce) { maximize(w, !maxed(w)); return; }
+		/* it springs from where it was to where it's going, measured on either side of the switch */
+		w.classList.remove('bump');
+		var a = w.getBoundingClientRect();
 		maximize(w, !maxed(w));
+		var b = w.getBoundingClientRect();
+		if (!b.width || !b.height) return;
+		w.style.setProperty('--zx', a.left - b.left + 'px');
+		w.style.setProperty('--zy', a.top - b.top + 'px');
+		w.style.setProperty('--zw', a.width / b.width);
+		w.style.setProperty('--zh', a.height / b.height);
+		w.dataset.busy = '1';
+		play(w, 'zooming', function () { delete w.dataset.busy; });
 	}
 
 	/* a light haptic tick on phones that support it (Android; iOS Safari has no vibration API) */
@@ -642,6 +654,7 @@
 		   back, so nothing drawn is lost: restored, the whole picture is shown smaller to fit the window (style.css), and on
 		   a screen too small for it, it's scaled down the same way. */
 		var pwin = cv.closest('.win'), pmain = cv.closest('.pnt-main'), pal = pmain.querySelector('.pnt-pal');
+		var firstW = cv.width, firstH = cv.height;
 		function fit() {
 			if (!maxed(pwin)) { cv.style.width = cv.style.height = ''; return; }
 			var bw = pmain.clientWidth - 4, bh = pmain.clientHeight - pal.offsetHeight - 6 - 4; /* less the palette, the gap and the frame */
@@ -655,12 +668,24 @@
 			var s = Math.min(1, bw / cv.width, bh / cv.height);
 			cv.style.width = cv.width * s + 'px'; cv.style.height = cv.height * s + 'px';
 		}
-		pwin.addEventListener('maxchange', fit);
+		function blank() {
+			var px = new Uint32Array(ctx.getImageData(0, 0, cv.width, cv.height).data.buffer);
+			for (var i = 0; i < px.length; i++) if (px[i] !== 0xffffffff) return false;
+			return true;
+		}
+		/* restored with nothing drawn and nothing to undo, it goes back to its first size instead of shown smaller */
+		pwin.addEventListener('maxchange', function () {
+			if (!maxed(pwin) && (cv.width !== firstW || cv.height !== firstH) && !undo.length && blank()) {
+				cv.width = firstW; cv.height = firstH;
+				ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+			}
+			fit();
+		});
 		window.addEventListener('resize', fit);
 
 		/* closed, it lets go of the picture and its undo steps (which can be big), so it opens next time as it first did:
 		   a blank canvas at its first size, with the pencil in the first color */
-		var firstW = cv.width, firstH = cv.height, swatches = sw.querySelectorAll('.sw');
+		var swatches = sw.querySelectorAll('.sw');
 		pwin.addEventListener('closed', function () {
 			stop(); undo = [];
 			cv.width = firstW; cv.height = firstH; cv.style.width = cv.style.height = '';
